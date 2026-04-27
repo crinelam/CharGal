@@ -1,39 +1,22 @@
 import sys
 
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6 import QtWidgets, QMainWindow
 
 
-class MyWidget(QtWidgets.QWidget):
-    """Test Widget."""
+class MainWindow(QMainWindow):
+    """Main Window."""
 
     def __init__(self):
-        """Initialize Stuff."""
+        """Initialize window."""
         super().__init__()
 
-        self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
-
-        self.button = QtWidgets.QPushButton("Click Me!")
-        self.text = QtWidgets.QLabel("Hello World",
-                                     alignment=QtCore.Qt.AlignCenter)
-
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.text)
-        self.layout.addWidget(self.button)
-
-        self.button.clicked.connect(self.magic)
-
-    @QtCore.Slot()
-    def magic(self):
-        """Select a random greeting."""
-        self.text.setText(random.choice(self.hello))
+        self.setWindowTitle("Character Gallery")
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
-    widget = MyWidget()
-    widget.resize(800, 600)
-    widget.show()
+    window = MainWindow()
+    window.show()
 
     sys.exit(app.exec())
