@@ -62,21 +62,23 @@ class MainWindow(QMainWindow):
 
     def initMain(self):
         """Initialize main area."""
-        tabs = QTabWidget()
-        tabs.setTabPosition(QTabWidget.North)
-        tabs.setMovable(True)
+        self.tabs = QTabWidget()
+        self.tabs.setTabPosition(QTabWidget.North)
+        self.tabs.setMovable(True)
+        self.tabs.setTabsClosable(True)
+        self.tabs.tabCloseRequested.connect(self.closeTabHandler)
 
         for color in ["red", "green", "blue", "yellow"]:
-            tabs.addTab(Color(color), color)
+            self.tabs.addTab(Color(color), color)
 
-        self.setCentralWidget(tabs)
+        self.setCentralWidget(self.tabs)
 
     def initMenu(self):
         """Initialize menu."""
-        menu = self.menuBar()
-        mFile = menu.addMenu("&File")
-        mEdit = menu.addMenu("&Edit")
-        mHelp = menu.addMenu("&Help")
+        self.menu = self.menuBar()
+        mFile = self.menu.addMenu("&File")
+        mEdit = self.menu.addMenu("&Edit")
+        mHelp = self.menu.addMenu("&Help")
 
         aExit = QAction("E&xit", self)
         # aExit.setShortcut("Alt+F4")
@@ -100,36 +102,37 @@ class MainWindow(QMainWindow):
 
     def initToolbar(self):
         """Initialize toolbar."""
-        toolbar = QToolBar("Main Toolbar")
-        toolbar.setIconSize(QSize(16, 16))
-        toolbar.setMovable(False)
-        toolbar.setFloatable(False)
+        self.toolbar = QToolBar("Main Toolbar")
+        self.toolbar.setIconSize(QSize(16, 16))
+        self.toolbar.setMovable(False)
+        self.toolbar.setFloatable(False)
 
         aNewChar = QAction(QIcon("assets/icons/blue-document--plus.png"),
                            "New Character", self)
         aNewChar.setStatusTip("Create a new character")
         aNewChar.triggered.connect(self.newChar)
-        toolbar.addAction(aNewChar)
+        self.toolbar.addAction(aNewChar)
 
         aNewFolder = QAction(QIcon("assets/icons/blue-folder--plus.png"),
-                           "New Folder", self)
+                             "New Folder", self)
         aNewFolder.setStatusTip("Create a new folder")
         aNewChar.triggered.connect(self.newFolder)
-        toolbar.addAction(aNewFolder)
+        self.toolbar.addAction(aNewFolder)
 
-        self.addToolBar(toolbar)
+        self.addToolBar(self.toolbar)
 
     def initTree(self):
         """Initialize characters tree."""
-        tree = CharactersTree()
+        self.tree = CharactersTree()
 
         # TODO: Save Last Area it was docked in
-        self.addDockWidget(Qt.LeftDockWidgetArea, tree)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.tree)
 
     def showAbout(self):
         """Show about popup."""
         self.popup = AboutPopup(self)
-        self.popup.setGeometry(QRect((self.width() - 400) / 2, (self.height() - 200) / 2,
+        self.popup.setGeometry(QRect((self.width() - 400) / 2,
+                                     (self.height() - 200) / 2,
                                      400, 200))
         self.popup.show()
 
@@ -142,6 +145,11 @@ class MainWindow(QMainWindow):
         """Open dialog to create a new folder."""
         # TODO: New Folder dialog and creation.
         print("newFolder not implemented yet :C")
+
+    def closeTabHandler(self, index):
+        """Handle tab closure."""
+        # TODO: Ask to save changes and allow to cancel the closure.
+        self.tabs.removeTab(index)
 
     def quit(self):
         """Close the app."""
