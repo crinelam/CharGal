@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         mHelp = menu.addMenu("&Help")
 
         aExit = QAction("E&xit", self)
-        aExit.setShortcut("Alt+F4")
+        # aExit.setShortcut("Alt+F4")
         aExit.triggered.connect(self.quit)
         mFile.addAction(aExit)
 
@@ -111,6 +111,12 @@ class MainWindow(QMainWindow):
         aNewChar.triggered.connect(self.newChar)
         toolbar.addAction(aNewChar)
 
+        aNewFolder = QAction(QIcon("assets/icons/blue-folder--plus.png"),
+                           "New Folder", self)
+        aNewFolder.setStatusTip("Create a new folder")
+        aNewChar.triggered.connect(self.newFolder)
+        toolbar.addAction(aNewFolder)
+
         self.addToolBar(toolbar)
 
     def initTree(self):
@@ -132,7 +138,13 @@ class MainWindow(QMainWindow):
         # TODO: New Character dialog and creation.
         print("newChar not implemented yet :C")
 
+    def newFolder(self):
+        """Open dialog to create a new folder."""
+        # TODO: New Folder dialog and creation.
+        print("newFolder not implemented yet :C")
+
     def quit(self):
         """Close the app."""
+        print("Closing")
         QApplication.closeAllWindows()
         QApplication.quit()
