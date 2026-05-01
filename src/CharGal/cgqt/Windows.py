@@ -3,6 +3,8 @@ from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QApplication, QToolBar
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget
 from cgqt.Widgets import Color, CharactersTree
+from Config import DirectoryManager
+import json
 
 
 class AboutPopup(QWidget):
@@ -36,12 +38,21 @@ class MainWindow(QMainWindow):
         """Initialize window."""
         super().__init__()
 
+        self.config = {}
+        self.loadConfig()
+        
         self.setWindowTitle("Character Gallery")
         # TODO: Set Window Icon
         # self.setWindowIcon(QIcon(""))
         self.showMaximized()
-
+        
         self.initElements()
+
+    def loadConfig(self):
+        """Load configuration."""
+        self.dirMan = DirectoryManager()
+        self.config = self.dirMan.loadConfig()
+        # print(self.config)
 
     def initElements(self):
         """Initialize the gui elements."""
@@ -82,7 +93,7 @@ class MainWindow(QMainWindow):
 
         aExit = QAction("E&xit", self)
         # aExit.setShortcut("Alt+F4")
-        aExit.triggered.connect(self.quit)
+        aExit.triggered.connect(self.close)
         mFile.addAction(aExit)
 
         aUndo = QAction("&Undo", self)
@@ -126,7 +137,18 @@ class MainWindow(QMainWindow):
         self.tree = CharactersTree()
 
         # TODO: Save Last Area it was docked in
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.tree)
+        if "treeDockedArea" in self.config:
+            area = self.config["treeDockedArea"]
+            if area == "Left":
+                self.addDockWidget(Qt.LeftDockWidgetArea, self.tree)
+            else:
+                self.addDockWidget(Qt.RightDockWidgetArea, self.tree)
+        else:
+            # Default value
+            self.config["treeDockedArea"] = "Left"
+            self.addDockWidget(Qt.LeftDockWidgetArea, self.tree)
+
+        self.tree.dockLocationChanged.connect(self.changedDocked)
 
     def showAbout(self):
         """Show about popup."""
@@ -151,8 +173,16 @@ class MainWindow(QMainWindow):
         # TODO: Ask to save changes and allow to cancel the closure.
         self.tabs.removeTab(index)
 
-    def quit(self):
-        """Close the app."""
+    def changedDocked(self):
+        if self.tree.dockLocation == Qt.LeftDockWidgetArea:
+            self.config["treeDockedArea"] = "Left"
+        else:
+            self.config["treeDockedArea"] = "Right"
+        self.dirMan.saveConfig(self.config)
+        
+    def closeEvent(self, event):
+        """Close event."""
+        # TODO: Detect unsaved character changes.
         print("Closing")
-        QApplication.closeAllWindows()
-        QApplication.quit()
+        self.dirMan.saveConfig(self.config)
+        event.accept()
