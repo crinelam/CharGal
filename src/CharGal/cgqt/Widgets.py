@@ -30,7 +30,7 @@ class CharactersTree(QDockWidget):
 
         self.setWindowTitle("Characters Folders")
 
-        self.setFeatures(self.DockWidgetFeature.DockWidgetMovable | self.DockWidgetFeature.DockWidgetVerticalTitleBar)
+        self.setFeatures(self.DockWidgetFeature.DockWidgetMovable)  # | self.DockWidgetFeature.DockWidgetVerticalTitleBar)
         self.setAllowedAreas(Qt.RightDockWidgetArea | Qt.LeftDockWidgetArea)
         
         tree = QTreeWidget()

@@ -174,7 +174,8 @@ class MainWindow(QMainWindow):
         self.tabs.removeTab(index)
 
     def changedDocked(self):
-        if self.tree.dockLocation == Qt.LeftDockWidgetArea:
+        location = self.tree.dockLocation()
+        if location == Qt.LeftDockWidgetArea:
             self.config["treeDockedArea"] = "Left"
         else:
             self.config["treeDockedArea"] = "Right"
