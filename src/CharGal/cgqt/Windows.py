@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QMainWindow, QTabWidget, QApplication, QToolBar
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget
 from cgqt.Widgets import Color, CharactersTree
 from Config import DirectoryManager
+from alchemy.db import *
 import json
 
 
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow):
 
         self.config = {}
         self.loadConfig()
+
+        self.db = DB()
         
         self.setWindowTitle("Character Gallery")
         # TODO: Set Window Icon
@@ -127,7 +130,7 @@ class MainWindow(QMainWindow):
         aNewFolder = QAction(QIcon("assets/icons/blue-folder--plus.png"),
                              "New Folder", self)
         aNewFolder.setStatusTip("Create a new folder")
-        aNewChar.triggered.connect(self.newFolder)
+        aNewFolder.triggered.connect(self.newFolder)
         self.toolbar.addAction(aNewFolder)
 
         self.addToolBar(self.toolbar)
@@ -167,6 +170,7 @@ class MainWindow(QMainWindow):
         """Open dialog to create a new folder."""
         # TODO: New Folder dialog and creation.
         print("newFolder not implemented yet :C")
+        self.db.saveFolder(Folder(name="Test"))
 
     def closeTabHandler(self, index):
         """Handle tab closure."""

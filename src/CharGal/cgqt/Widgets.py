@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QWidget, QDockWidget, QTreeWidget, QTreeWidgetItem
-
+from alchemy.db import *
 
 class Color(QWidget):
     """Simple color widget for placeholder purposes."""
@@ -24,9 +24,8 @@ class CharactersTree(QDockWidget):
     def __init__(self):
         super().__init__()
 
-        data = {"Folder A": ["Character 1", "Character 2", "Character 3"],
-                "Folder B": ["Character 1", "Character 2"],
-                "Folder C": []}
+        db = DB()
+        data = db.getFolders()
 
         self.setWindowTitle("Characters Folders")
 

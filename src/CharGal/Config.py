@@ -1,4 +1,5 @@
 from platformdirs import PlatformDirs
+from sqlalchemy import create_engine
 from pathlib import Path
 import tempfile
 import json
@@ -21,9 +22,19 @@ class DirectoryManager():
         """Get the config dir from the system."""
         return self.dirs.user_config_path
 
-    def getDataDir(self):
+    def getDataPath(self):
         """Get tge data dir from the system."""
-        return self.dirs.user_data_dir
+        return self.dirs.user_data_path
+
+    def getDBEngine(self):
+        """Get a sqlalchemy engine."""
+        dir = self.getDataPath()
+        file = dir / "data.db"
+        file.parent.mkdir(parents=True, exist_ok=True)
+        print(file)
+        engine = create_engine("sqlite:///" + str(file))
+        print("Connected to database:", engine)
+        return engine
 
     def saveConfig(self, config):
         """Save the configuration file."""
