@@ -1,11 +1,11 @@
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QApplication, QToolBar
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QToolBar
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget
 from cgqt.Widgets import Color, CharactersTree
 from Config import DirectoryManager
-from alchemy.db import *
-import json
+from alchemy.db import DB, Character, Folder
+# import json
 
 
 class AboutPopup(QWidget):
@@ -43,12 +43,12 @@ class MainWindow(QMainWindow):
         self.loadConfig()
 
         self.db = DB()
-        
+
         self.setWindowTitle("Character Gallery")
         # TODO: Set Window Icon
         # self.setWindowIcon(QIcon(""))
         self.showMaximized()
-        
+
         self.initElements()
 
     def loadConfig(self):
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         aNewChar.triggered.connect(self.newChar)
         self.toolbar.addAction(aNewChar)
 
-        aNewFolder = QAction(QIcon("assets/icons/blue-folder--plus.png"),
+        aNewFolder = QAction(QIcon("assets/icons/folder--plus.png"),
                              "New Folder", self)
         aNewFolder.setStatusTip("Create a new folder")
         aNewFolder.triggered.connect(self.newFolder)
@@ -170,7 +170,6 @@ class MainWindow(QMainWindow):
         """Open dialog to create a new folder."""
         # TODO: New Folder dialog and creation.
         print("newFolder not implemented yet :C")
-        self.db.saveFolder(Folder(name="Test"))
 
     def closeTabHandler(self, index):
         """Handle tab closure."""
@@ -178,13 +177,14 @@ class MainWindow(QMainWindow):
         self.tabs.removeTab(index)
 
     def changedDocked(self):
+        """Trigger when the docked widget position is changed."""
         location = self.tree.dockLocation()
         if location == Qt.LeftDockWidgetArea:
             self.config["treeDockedArea"] = "Left"
         else:
             self.config["treeDockedArea"] = "Right"
         self.dirMan.saveConfig(self.config)
-        
+
     def closeEvent(self, event):
         """Close event."""
         # TODO: Detect unsaved character changes.

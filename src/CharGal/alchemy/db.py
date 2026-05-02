@@ -5,6 +5,7 @@ from Config import DirectoryManager
 
 class DB():
     """DB Manager."""
+
     def __init__(self):
         """Initialize db."""
         self.dirMan = DirectoryManager()
@@ -14,62 +15,113 @@ class DB():
         Base.metadata.create_all(self.engine)
 
     def getSession(self):
-        """Return a session"""
+        """Return a session."""
         return Session(bind=self.engine)
 
-    def getFolders(self):
-        """Return folder list."""
-        #data = {"Folder A": ["Character 1", "Character 2", "Character 3"],
-        #        "Folder B": ["Character 1", "Character 2"],
-        #        "Folder C": []}
-        data = {}
-        
+    def getRootFolders(self):
+        """Return root folders list."""
         session = self.getSession()
-        
-        folders = session.query(Folder).all()
-        folderParents = session.query(FolderParents).all()
-        
+
+        folders = session.query(Folder).filter_by(parentId=None)
+        session.close()
+        data = []
+
         for folder in folders:
-            #if folder.id in folderParents.child_id:
-            #    print(folder)
-            print(folder.name)
-            folderParents = session.query(FolderParents).filter_by(childId=folder.id).all()
-            childs = []
-            for child in folderParents:
-                childs.append(child.name)
-            data[folder.name] = childs
+
+            data.append({"type": "Folder", "name": folder.name, "id": folder.id})
+        return data
+
+    
+    def getRootCharacters(self):
+         """Return characters by folder id."""
+         session = self.getSession()
+
+         characters = session.query(Character).filter_by(folder=None)
+         session.close()
+         data = []
+
+         for character in characters:
+             data.append({"type": "Character", "name": character.name, "id": character.id, "image": character.image})
+         return data
+    
+    def getFoldersByParentId(self, searchId):
+        """Return folders by parent id."""
+        session = self.getSession()
+
+        folders = session.query(Folder).filter_by(parentId=searchId)
+        session.close()
+        data = []
+
+        for folder in folders:
+           data.append({"type": "Folder", "name": folder.name, "id": folder.id, "parentId": folder.parentId})
+        return data
+
+    def getCharactersByFolderId(self, searchId):
+         """Return characters by folder id."""
+         session = self.getSession()
+
+         characters = session.query(Character).filter_by(folder=searchId)
+         session.close()
+         data = []
+
+         for character in characters:
+             data.append({"type": "Character", "name": character.name, "id": character.id, "image": character.image})
+         return data
+
+    def getChildFolders(self):
+        """Return folders with parents."""
+        session = self.getSession()
+
+        folders = session.query(Folder).filter(Folder.parentId is not None)
+        session.close()
+        data = []
+
+        for folder in folders:
+            data.append({"type": "Folder", "name": folder.name, "id": folder.id, "parentId": folder.parentId})
         return data
 
     def saveFolder(self, folder):
+        """Save folder to db."""
         session = self.getSession()
         session.add(folder)
         session.commit()
+        session.close()
 
-        
+    def saveCharacter(self, character):
+        """Save character to db."""
+        session = self.getSession()
+        session.add(character)
+        session.commit()
+        session.close()
+
+
 class Base(DeclarativeBase):
     """Base."""
-    
-    
+
+
 class Folder(Base):
     """Folder table."""
+
     __tablename__ = "folders"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
+    parentId = Column(Integer, ForeignKey("folders.id"))
 
 
-class FolderParents(Base):
-    """Folder Parents table."""
-    __tablename__ = "folder_parents"
-
-    parentId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
-    childId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
+# class FolderParents(Base):
+#     """Folder Parents table."""
+#     __tablename__ = "folder_parents"
+#
+#     parentId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
+#     childId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
 
 
 class Character(Base):
     """Characters table."""
+
     __tablename__ = "characters"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     image = Column(String)
     name = Column(String)
@@ -89,6 +141,7 @@ class Character(Base):
 
 class Tag(Base):
     """Tags table."""
+
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -99,22 +152,28 @@ class Tag(Base):
 
 class TagParent(Base):
     """Tag parents table."""
+
     __tablename__ = "tag_parents"
 
-    tagId = Column(Integer, ForeignKey("tags.id"), primary_key=True, nullable=False)
-    characterId = Column(Integer, ForeignKey("characters.id"), primary_key=True, nullable=False)
+    tagId = Column(Integer, ForeignKey("tags.id"), primary_key=True,
+                   nullable=False)
+    characterId = Column(Integer, ForeignKey("characters.id"),
+                         primary_key=True, nullable=False)
 
-    
+
 class CharacterImage(Base):
-    """Character images table-"""
+    """Character images table."""
+
     __tablename__ = "character_images"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     character = Column(Integer, ForeignKey("characters.id"), nullable=False)
     image = Column(String, nullable=False)
 
+
 class CharacterDocument(Base):
-    """Character documents table-"""
+    """Character documents table."""
+
     __tablename__ = "character_documents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

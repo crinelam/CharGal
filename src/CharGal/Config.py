@@ -23,17 +23,23 @@ class DirectoryManager():
         return self.dirs.user_config_path
 
     def getDataPath(self):
-        """Get tge data dir from the system."""
+        """Get the data dir from the system."""
         return self.dirs.user_data_path
+
+    def getImagePath(self, name):
+        """Get the image path for a given image name."""
+        dir = self.getDataPath()
+        file = dir / "images" / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        return file
 
     def getDBEngine(self):
         """Get a sqlalchemy engine."""
         dir = self.getDataPath()
         file = dir / "data.db"
         file.parent.mkdir(parents=True, exist_ok=True)
-        print(file)
-        engine = create_engine("sqlite:///" + str(file))
-        print("Connected to database:", engine)
+        engine = create_engine("sqlite:///" + str(file), pool_size=20, max_overflow=0)
+        # print("Connected to database:", engine)
         return engine
 
     def saveConfig(self, config):
