@@ -1,10 +1,10 @@
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QToolBar
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget
-from cgqt.Widgets import Color, CharactersTree
+from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
+                               QVBoxLayout, QLabel, QWidget)
+from cgqt.Widgets import CharacterInfo, CharactersTree
 from Config import DirectoryManager
-from alchemy.db import DB, Character, Folder
+from alchemy.db import DB
 # import json
 
 
@@ -82,9 +82,9 @@ class MainWindow(QMainWindow):
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.closeTabHandler)
 
-        for color in ["red", "green", "blue", "yellow"]:
-            self.tabs.addTab(Color(color), color)
-
+        # for id in [1, 2, 6, 7]:
+        #     self.tabs.addTab(CharacterInfo(id),
+        #                      self.db.getCharacterNameById(id))
         self.setCentralWidget(self.tabs)
 
     def initMenu(self):
@@ -152,6 +152,7 @@ class MainWindow(QMainWindow):
             self.addDockWidget(Qt.LeftDockWidgetArea, self.tree)
 
         self.tree.dockLocationChanged.connect(self.changedDocked)
+        self.tree.tree.doubleClicked.connect(self.openCharacter)
 
     def showAbout(self):
         """Show about popup."""
@@ -165,6 +166,16 @@ class MainWindow(QMainWindow):
         """Open dialog to create a new character."""
         # TODO: New Character dialog and creation.
         print("newChar not implemented yet :C")
+
+    def openCharacter(self, index):
+        """Open clicked character."""
+        item = self.tree.tree.itemFromIndex(index)
+        type = item.data(1, 0)
+        if type == "Character":
+            id = item.data(2, 0)
+            index = self.tabs.addTab(CharacterInfo(id),
+                                     self.db.getCharacterNameById(id))
+            self.tabs.setCurrentIndex(index)
 
     def newFolder(self):
         """Open dialog to create a new folder."""

@@ -28,45 +28,22 @@ class DB():
 
         for folder in folders:
 
-            data.append({"type": "Folder", "name": folder.name, "id": folder.id})
+            data.append({"type": "Folder", "name": folder.name,
+                         "id": folder.id})
         return data
 
-    
     def getRootCharacters(self):
-         """Return characters by folder id."""
-         session = self.getSession()
-
-         characters = session.query(Character).filter_by(folder=None)
-         session.close()
-         data = []
-
-         for character in characters:
-             data.append({"type": "Character", "name": character.name, "id": character.id, "image": character.image})
-         return data
-    
-    def getFoldersByParentId(self, searchId):
-        """Return folders by parent id."""
+        """Return characters by folder id."""
         session = self.getSession()
 
-        folders = session.query(Folder).filter_by(parentId=searchId)
+        characters = session.query(Character).filter_by(folder=None)
         session.close()
         data = []
 
-        for folder in folders:
-           data.append({"type": "Folder", "name": folder.name, "id": folder.id, "parentId": folder.parentId})
+        for character in characters:
+            data.append({"type": "Character", "name": character.name,
+                         "id": character.id, "image": character.image})
         return data
-
-    def getCharactersByFolderId(self, searchId):
-         """Return characters by folder id."""
-         session = self.getSession()
-
-         characters = session.query(Character).filter_by(folder=searchId)
-         session.close()
-         data = []
-
-         for character in characters:
-             data.append({"type": "Character", "name": character.name, "id": character.id, "image": character.image})
-         return data
 
     def getChildFolders(self):
         """Return folders with parents."""
@@ -77,8 +54,69 @@ class DB():
         data = []
 
         for folder in folders:
-            data.append({"type": "Folder", "name": folder.name, "id": folder.id, "parentId": folder.parentId})
+            data.append({"type": "Folder", "name": folder.name,
+                         "id": folder.id, "parentId": folder.parentId})
         return data
+
+    def getFoldersByParentId(self, searchId):
+        """Return folders by parent id."""
+        session = self.getSession()
+
+        folders = session.query(Folder).filter_by(parentId=searchId)
+        session.close()
+        data = []
+
+        for folder in folders:
+            data.append({"type": "Folder", "name": folder.name,
+                         "id": folder.id, "parentId": folder.parentId})
+        return data
+
+    def getCharactersByFolderId(self, searchId):
+        """Return characters by folder id."""
+        session = self.getSession()
+
+        characters = session.query(Character).filter_by(folder=searchId)
+        session.close()
+        data = []
+
+        for character in characters:
+            data.append({"type": "Character", "name": character.name,
+                         "id": character.id, "image": character.image})
+        return data
+
+    def getCharacterById(self, searchId):
+        """Return character by id."""
+        session = self.getSession()
+
+        characters = session.query(Character).filter_by(id=searchId)
+        session.close()
+        data = []
+
+        for character in characters:
+            data = {"id": character.id, "image": character.image,
+                    "name": character.name,
+                    "description": character.description,
+                    "pronouns": character.pronouns,
+                    "orientation": character.orientation,
+                    "age": character.age, "birthday": character.birthday,
+                    "height": character.height,
+                    "weight": character.weight, "eyes": character.eyes,
+                    "hair": character.hair, "job": character.job,
+                    "species": character.species,
+                    "folder": character.folder}
+        return data
+
+    def getCharacterNameById(self, searchId):
+        """Return character name by id."""
+        session = self.getSession()
+
+        characters = session.query(Character).filter_by(id=searchId)
+        session.close()
+        name = ""
+
+        for character in characters:
+            name = character.name
+        return name
 
     def saveFolder(self, folder):
         """Save folder to db."""
