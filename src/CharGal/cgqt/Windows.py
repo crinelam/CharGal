@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
                                QVBoxLayout, QLabel, QWidget)
 from cgqt.Widgets import CharacterInfo, CharactersTree
 from Config import DirectoryManager
-from alchemy.db import DB
+from alchemy.db import DB, CharacterImage
 # import json
 
 
@@ -181,6 +181,11 @@ class MainWindow(QMainWindow):
         """Open dialog to create a new folder."""
         # TODO: New Folder dialog and creation.
         print("newFolder not implemented yet :C")
+        self.db.saveCharacterImage(CharacterImage(character=7, image="test3.png"))
+        self.db.saveCharacterImage(CharacterImage(character=7, image="test.png"))
+        self.db.saveCharacterImage(CharacterImage(character=7, image="test5.png"))
+        self.db.saveCharacterImage(CharacterImage(character=7, image="test4.png"))
+        self.db.saveCharacterImage(CharacterImage(character=7, image="test2.png"))
 
     def closeTabHandler(self, index):
         """Handle tab closure."""

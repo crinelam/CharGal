@@ -1,8 +1,10 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPalette, QIcon, QPixmap
+from PySide6.QtGui import (QColor, QPalette, QIcon, QPixmap)
 from PySide6.QtWidgets import (QWidget, QDockWidget, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QHBoxLayout,
-                               QLabel, QFormLayout, QLineEdit)
+                               QLabel, QFormLayout, QLineEdit, QPushButton,
+                               QTextEdit, QCheckBox, QStackedWidget,
+                               QScrollArea, QSizePolicy, QListWidget)
 from alchemy.db import DB
 from Config import DirectoryManager
 
@@ -28,6 +30,10 @@ class CharacterInfo(QWidget):
         """Initialize widget."""
         super().__init__()
 
+        self.scrollArea = QScrollArea()
+
+        self.scrollArea.setWidget(self)
+
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -36,6 +42,10 @@ class CharacterInfo(QWidget):
         self.info = self.db.getCharacterById(characterId)
 
         self.layout.addWidget(CharacterInfoHeader(self.info))
+
+        self.layout.addWidget(CharacterDescription(self.info["description"]))
+
+        self.layout.addWidget(CharacterGallery(self.info["id"]))
 
 
 class CharacterInfoHeader(QWidget):
@@ -72,31 +82,68 @@ class CharacterInfoHeader(QWidget):
         self.formLayout1.addRow(QLabel("name"), self.nameEdit)
         self.formLayout1.addRow(QLabel("pronouns"), self.pronounsEdit)
         self.formLayout1.addRow(QLabel("orientation"), self.orientationEdit)
+        self.formLayout1.addRow(QLabel("age"), self.ageEdit)
+        self.formLayout1.addRow(QLabel("birthday"), self.birthdayEdit)
+        self.formLayout1.addRow(QLabel("job"), self.jobEdit)
 
         self.info2 = QWidget()
         self.formLayout2 = QFormLayout()
         self.info2.setLayout(self.formLayout2)
-        self.formLayout2.addRow(QLabel("age"), self.ageEdit)
-        self.formLayout2.addRow(QLabel("birthday"), self.birthdayEdit)
         self.formLayout2.addRow(QLabel("eyes"), self.eyesEdit)
-
-        self.info3 = QWidget()
-        self.formLayout3 = QFormLayout()
-        self.info3.setLayout(self.formLayout3)
-        self.formLayout3.addRow(QLabel("height"), self.heightEdit)
-        self.formLayout3.addRow(QLabel("weight"), self.weightEdit)
-        self.formLayout3.addRow(QLabel("hair"), self.hairEdit)
-
-        self.info4 = QWidget()
-        self.formLayout4 = QFormLayout()
-        self.info4.setLayout(self.formLayout4)
-        self.formLayout4.addRow(QLabel("job"), self.jobEdit)
-        self.formLayout4.addRow(QLabel("species"), self.speciesEdit)
+        self.formLayout2.addRow(QLabel("hair"), self.hairEdit)
+        self.formLayout2.addRow(QLabel("height"), self.heightEdit)
+        self.formLayout2.addRow(QLabel("weight"), self.weightEdit)
+        self.formLayout2.addRow(QLabel("species"), self.speciesEdit)
 
         self.layout.addWidget(self.info1)
         self.layout.addWidget(self.info2)
-        self.layout.addWidget(self.info3)
-        self.layout.addWidget(self.info4)
+
+        self.layout.addWidget(CharacterTags(info["id"]))
+        self.layout.addWidget(CharacterFiles(info["id"]))
+
+        self.setFixedHeight(210)
+
+
+class CharacterTags(QWidget):
+    """Character tags."""
+
+    def __init__(self, characterId):
+        """Initialize widget."""
+        super().__init__()
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.bEdit = QPushButton("Edit tags.")
+        self.layout.addWidget(self.bEdit)
+
+        self.tagsWidget = QWidget()
+        self.layout.addWidget(self.tagsWidget)
+        self.tagsWidget.setStyleSheet("border: 1px solid gray;")
+        self.setFixedWidth(200)
+        self.setFixedHeight(200)
+
+
+class CharacterFiles(QWidget):
+    """Character files."""
+
+    def __init__(self, characterId):
+        """Initialize widget."""
+        super().__init__()
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.bAddFile = QPushButton("Add file.")
+        self.layout.addWidget(self.bAddFile)
+
+        self.filesWidget = QListWidget()
+        self.layout.addWidget(self.filesWidget)
+        self.setFixedWidth(200)
+        self.setFixedHeight(200)
+
+        placeholderData = ["File1.txt", "File2.pdf", "File3"]
+        self.filesWidget.addItems(placeholderData)
 
 
 class CharacterImage(QLabel):
@@ -105,6 +152,10 @@ class CharacterImage(QLabel):
     def __init__(self, imageName):
         """Initialize widget."""
         super().__init__()
+
+        self.setStyleSheet("border: 1px solid gray;")
+        self.setFixedWidth(200)
+        self.setFixedHeight(200)
 
         self.defaultImage = QPixmap("assets/images/blankCharacter.png").scaled(
             200, 200, Qt.AspectRatioMode.KeepAspectRatio)
@@ -119,6 +170,90 @@ class CharacterImage(QLabel):
             self.image = self.defaultImage
 
         self.setPixmap(self.image)
+
+
+class CharacterDescription(QWidget):
+    """Character description widget."""
+
+    def __init__(self, description):
+        """Initialize Widget."""
+        super().__init__()
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.text = description
+
+        self.cEdit = QCheckBox("Edit Description")
+        self.layout.addWidget(self.cEdit)
+        self.cEdit.checkStateChanged.connect(self.changeEditMode)
+
+        self.stacked = QStackedWidget()
+
+        self.markdownViewer = QTextEdit(readOnly=True)
+        self.markdownViewer.setMarkdown(self.text)
+
+        self.markdownEditor = QTextEdit()
+        self.markdownEditor.setText(self.text)
+
+        self.stacked.addWidget(self.markdownViewer)
+        self.stacked.addWidget(self.markdownEditor)
+
+        self.layout.addWidget(self.stacked)
+
+    def changeEditMode(self):
+        """Checkbox changed."""
+        if self.cEdit.isChecked():
+            self.stacked.setCurrentWidget(self.markdownEditor)
+        else:
+            self.stacked.setCurrentWidget(self.markdownViewer)
+        self.markdownViewer.setMarkdown(self.markdownEditor.toPlainText())
+
+
+class CharacterGallery(QWidget):
+    """Character gallery widget."""
+
+    def __init__(self, characterId):
+        """Initialize widget."""
+        super().__init__()
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.addImage = QPushButton("Add image")
+        self.addImage.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+
+        self.layout.addWidget(self.addImage)
+
+        self.scrollArea = QScrollArea()
+        self.scrollArea.setSizePolicy(QSizePolicy.Expanding,
+                                      QSizePolicy.Minimum)
+        self.scrollArea.setFixedHeight(230)
+        self.scrollArea.setWidget(ImageGallery(characterId))
+        self.layout.addWidget(self.scrollArea)
+
+
+class ImageGallery(QWidget):
+    """Images gallery widget."""
+
+    def __init__(self, characterId):
+        """Initialize widget."""
+        super().__init__()
+
+        self.setStyleSheet("border: 1px solid gray;")
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.setFixedHeight(210)
+
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.db = DB()
+
+        images = self.db.getImagesByCharacterId(characterId)
+        for image in images:
+            imageWidget = CharacterImage(image)
+            imageWidget.setContentsMargins(5, 5, 5, 5)
+            self.layout.addWidget(imageWidget)
 
 
 class CharactersTree(QDockWidget):

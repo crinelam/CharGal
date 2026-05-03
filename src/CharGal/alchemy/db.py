@@ -118,6 +118,18 @@ class DB():
             name = character.name
         return name
 
+    def getImagesByCharacterId(self, searchId):
+        """Return images by character id."""
+        session = self.getSession()
+
+        images = session.query(CharacterImage).filter_by(character=searchId)
+        session.close()
+        data = []
+
+        for image in images:
+            data.append(image.image)
+        return data
+
     def saveFolder(self, folder):
         """Save folder to db."""
         session = self.getSession()
@@ -129,6 +141,13 @@ class DB():
         """Save character to db."""
         session = self.getSession()
         session.add(character)
+        session.commit()
+        session.close()
+
+    def saveCharacterImage(self, characterImage):
+        """Save character image to db."""
+        session = self.getSession()
+        session.add(characterImage)
         session.commit()
         session.close()
 
@@ -145,14 +164,6 @@ class Folder(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     parentId = Column(Integer, ForeignKey("folders.id"))
-
-
-# class FolderParents(Base):
-#     """Folder Parents table."""
-#     __tablename__ = "folder_parents"
-#
-#     parentId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
-#     childId = Column(Integer, ForeignKey("folders.id"), primary_key=True, nullable=False)
 
 
 class Character(Base):
