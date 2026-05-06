@@ -89,8 +89,6 @@ class DB():
         session = self.getSession()
 
         character = session.query(Character).filter_by(id=searchId).first()
-        session.close()
-        data = []
         data = {"id": character.id, "image": character.image,
                 "name": character.name,
                 "description": character.description,
@@ -102,7 +100,28 @@ class DB():
                 "hair": character.hair, "job": character.job,
                 "species": character.species,
                 "folder": character.folder}
+        session.close()
         return data
+
+    def getFolderById(self, searchId):
+        """Return folder by id."""
+        session = self.getSession()
+
+        folder = session.query(Folder).filter_by(id=searchId).first()
+        data = {"id": folder.id,
+                "name": folder.name,
+                "parentId": folder.parentId}
+        session.close()
+        return data
+
+    def deleteFolder(self, folderId):
+         """Delete folder."""
+         session = self.getSession()
+         folder = session.query(Folder).filter_by(id=folderId).first()
+         if folder:
+             session.delete(folder)
+             session.commit()
+         session.close()
 
     def getCharacterNameById(self, searchId):
         """Return character name by id."""
@@ -132,10 +151,21 @@ class DB():
         session = self.getSession()
         session.add(folder)
         session.commit()
+        id = folder.id
         session.close()
+        return id
+
+    def saveCharacter(self, character):
+        """Save character to db."""
+        session = self.getSession()
+        session.add(character)
+        session.commit()
+        id = character.id
+        session.close()
+        return id
 
     def updateCharacter(self, characterInfo):
-        """Save character to db."""
+        """Update character to db."""
         session = self.getSession()
         character = session.query(Character).filter_by(
             id=characterInfo["id"]).first()
@@ -164,6 +194,16 @@ class DB():
             id=characterId).first()
         if character:
             character.image = imageName
+            session.commit()
+        session.close()
+
+    def updateCharacterFolder(self, characterId, folderId):
+        """Update folder of character."""
+        session = self.getSession()
+        character = session.query(Character).filter_by(
+            id=characterId).first()
+        if character:
+            character.folder = folderId
             session.commit()
         session.close()
 

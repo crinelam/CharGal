@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (QWidget, QDockWidget, QTreeWidget,
                                QLabel, QFormLayout, QLineEdit, QPushButton,
                                QTextEdit, QCheckBox, QStackedWidget,
                                QScrollArea, QSizePolicy, QMessageBox,
-                               QMenu, QFileDialog)
+                               QMenu, QFileDialog, QFrame, QDialog,
+                               QDialogButtonBox)
 
 import alchemy.db
 from alchemy.db import DB
@@ -14,6 +15,79 @@ from Config import DirectoryManager
 import subprocess
 import os
 import platform
+
+
+class ChangeCharacterFolderDialog(QDialog):
+    """New character dialog."""
+
+    def __init__(self, parent, characterId):
+        """Initialize dialog."""
+        super().__init__(parent)
+
+        self.db = DB()
+
+        self.characterId = characterId
+
+        self.setWindowTitle("Change Character Folder")
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QFormLayout()
+
+        self.folderSelect = QTreeWidget()
+        self.folderSelect.setHeaderLabels(["Name", "ID"])
+        self.folderSelect.setColumnCount(2)
+        self.folderSelect.setColumnHidden(1, True)
+        self.folderSelect.setSortingEnabled(True)
+
+        self.folderIcon = QIcon("assets/icons/folder.png")
+        self.initFolders()
+
+        self.layout.addRow(QLabel("Folder"), self.folderSelect)
+
+        self.layout.addRow(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def accept(self):
+        """Accept event."""
+        folderItem = self.folderSelect.selectedItems()
+        selectedFolder = None
+        if folderItem:
+            selectedFolder = int(folderItem[0].data(1, 0))
+        else:
+            selectedFolder = None
+        self.db.updateCharacterFolder(self.characterId, selectedFolder)
+        self.parent().updateCharacterFolder(self.characterId, selectedFolder)
+        self.close()
+
+    def initFolders(self):
+        """Initialize folders."""
+        rootFolders = self.db.getRootFolders()
+
+        for root in rootFolders:
+            item = QTreeWidgetItem(self.folderSelect)
+            item.setText(0, root["name"])
+            item.setIcon(0, self.folderIcon)
+            item.setText(1, str(root["id"]))
+            self.folderSelect.insertTopLevelItem(0, item)
+            self.loadChilds(root["id"], item)
+
+    def loadChilds(self, id, parent):
+        """Check if folder has childs and iterate."""
+        childs = self.db.getFoldersByParentId(id)
+        if not bool(childs):
+            return
+        else:
+            for child in childs:
+                item = QTreeWidgetItem(parent)
+                item.setText(0, child["name"])
+                item.setIcon(0, self.folderIcon)
+                item.setText(1, str(child["id"]))
+                parent.addChild(item)
+                self.loadChilds(child["id"], item)
 
 
 class Color(QWidget):
@@ -52,7 +126,8 @@ class CharacterInfo(QWidget):
 
         self.layout.addWidget(CharacterDescription(self.info["description"]))
 
-        self.layout.addWidget(CharacterGallery(self.info["id"], self.info["name"]))
+        self.layout.addWidget(CharacterGallery(self.info["id"],
+                                               self.info["name"]))
 
 
 class CharacterInfoHeader(QWidget):
@@ -114,6 +189,22 @@ class CharacterInfoHeader(QWidget):
         self.formLayout2.addRow(QLabel("weight"), self.weightEdit)
         self.formLayout2.addRow(QLabel("species"), self.speciesEdit)
 
+        self.panel = QFrame()
+        self.panel.setContentsMargins(0, 0, 0, 0)
+        self.panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.panelLayout = QHBoxLayout()
+        self.panelLayout.setContentsMargins(0, 0, 0, 0)
+        self.bDeleteChar = QPushButton("Delete")
+        self.bChangeFolder = QPushButton("Change Folder")
+        self.bChangeFolder.clicked.connect(self.changeFolder)
+
+        self.panel.setLayout(self.panelLayout)
+        self.panelLayout.addWidget(self.bDeleteChar)
+        self.panelLayout.addWidget(self.bChangeFolder)
+
+        self.formLayout2.addRow(self.panel)
+
         self.layout.addWidget(self.info1)
         self.layout.addWidget(self.info2)
 
@@ -165,6 +256,13 @@ class CharacterInfoHeader(QWidget):
     def speciesEdited(self, text):
         """Species edited event."""
         self.parent().info["species"] = text
+
+    def changeFolder(self):
+        """Change folde eventr."""
+        parentWindow = self.parent().parent().parent().parent()
+        dialog = ChangeCharacterFolderDialog(parentWindow,
+                                             self.parent().info["id"])
+        dialog.exec()
 
 
 class CharacterTags(QWidget):
@@ -276,7 +374,8 @@ class CharacterFiles(QWidget):
         """Open file."""
         self.dirMan = DirectoryManager()
         selectedFile = self.filesWidget.selectedItems()[0].data(0, 0)
-        filepath = self.dirMan.getFilePath(selectedFile, self.characterId, self.characterName)
+        filepath = self.dirMan.getFilePath(selectedFile, self.characterId,
+                                           self.characterName)
 
         if platform.system() == 'Darwin':  # macOS
             subprocess.call(('open', filepath))
@@ -300,7 +399,6 @@ class CharacterFiles(QWidget):
             self.dirMan.deleteFile(selectedFile, self.characterId,
                                    self.characterName)
             self.refreshFiles()
-            
 
     def addFile(self):
         """Add file."""
@@ -370,7 +468,7 @@ class CharacterImage(QLabel):
         self.characterId = characterId
         self.characterName = characterName
 
-        self.setStyleSheet("border: 1px solid gray;")
+        self.setFrameStyle(QFrame.StyledPanel)
         self.setFixedWidth(200)
         self.setFixedHeight(200)
 
@@ -380,7 +478,9 @@ class CharacterImage(QLabel):
         self.dirMan = DirectoryManager()
 
         if self.imageName is not None:
-            imagePath = self.dirMan.getImagePath(self.imageName, self.characterId, self.characterName)
+            imagePath = self.dirMan.getImagePath(self.imageName,
+                                                 self.characterId,
+                                                 self.characterName)
             self.image = QPixmap(str(imagePath)).scaled(
                 200, 200, Qt.AspectRatioMode.KeepAspectRatio)
         else:
@@ -428,7 +528,7 @@ class MainCharacterImage(QLabel):
         self.characterId = characterId
         self.characterName = characterName
 
-        self.setStyleSheet("border: 1px solid gray;")
+        self.setFrameStyle(QFrame.StyledPanel)
         self.setFixedWidth(200)
         self.setFixedHeight(200)
 
@@ -617,9 +717,9 @@ class ImageGallery(QWidget):
 class CharactersTree(QDockWidget):
     """Tree widget for character organization."""
 
-    def __init__(self):
+    def __init__(self, parent):
         """Initialize Widget."""
-        super().__init__()
+        super().__init__(parent)
 
         self.db = DB()
         self.dirMan = DirectoryManager()
@@ -640,10 +740,59 @@ class CharactersTree(QDockWidget):
 
         self.folderIcon = QIcon("assets/icons/folder.png")
         self.characterIcon = QIcon("assets/icons/stickman-smiley.png")
-        # Load data TODO: Load from DB.
-        # TODO: Separate into it's own function.
+
         self.loadData()
         self.setWidget(self.tree)
+
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.createContextMenu)
+        self.lastContextMenuItem = None
+
+    def createContextMenu(self, pos):
+        """Create context menu."""
+        self.lastContextMenuItem = self.tree.itemAt(pos)
+        itemType = self.lastContextMenuItem.data(1, 0)
+        if itemType == "Folder":
+            menu = QMenu(self)
+            aDeleteFolder = QAction("Delete Folder", self)
+            aDeleteFolder.triggered.connect(self.deleteFolder)
+            menu.addAction(aDeleteFolder)
+            menu.exec(self.tree.mapToGlobal(pos))
+
+    def deleteFolder(self):
+        """Delete folder."""
+        dialog = QMessageBox.warning(self, "Delete folder?",
+                                     "Are you sure you want to delete the folder?\nWarning: This will delete all subfolders.\nCharacters will be moved to the root folder and all open characters will be saved afterwards.",
+                                     buttons=QMessageBox.Yes | QMessageBox.Cancel,
+                                     defaultButton=QMessageBox.Cancel)
+        if dialog == QMessageBox.Yes:
+            parentId = self.lastContextMenuItem.data(2, 0)
+            folders = self.db.getFoldersByParentId(parentId)
+            for folder in folders:
+                characters = self.db.getCharactersByFolderId(folder["id"])
+                for character in characters:
+                    self.db.updateCharacterFolder(character["id"], None)
+                    self.removeCharacterFromList(character["id"])
+                    character["folder"] = None
+                    self.addRootCharacter(character, False)
+
+            characters = self.db.getCharactersByFolderId(parentId)
+            for character in characters:
+                self.db.updateCharacterFolder(character["id"], None)
+                self.removeCharacterFromList(character["id"])
+                character["folder"] = None
+                self.addRootCharacter(character, False)
+
+            for folder in folders:
+                self.db.deleteFolder(folder["id"])
+                self.removeFolderFromList(folder["id"])
+            self.db.deleteFolder(parentId)
+            self.removeFolderFromList(parentId)
+
+            tabCount = self.parent().tabs.count()
+            for i in range(tabCount):
+                self.parent().tabs.setCurrentIndex(i)
+                self.parent().saveCharacter()
 
     def loadData(self):
         """Load data."""
@@ -651,18 +800,7 @@ class CharactersTree(QDockWidget):
         rootCharacters = self.db.getRootCharacters()
 
         for character in rootCharacters:
-            item = QTreeWidgetItem(self.tree)
-            item.setText(0, character["name"])
-            if character["image"] is not None:
-                path = self.dirMan.getImagePath(character["image"],
-                                                character["id"],
-                                                character["name"])
-                item.setIcon(0, QIcon(str(path)))
-            else:
-                item.setIcon(0, self.characterIcon)
-            item.setText(1, character["type"])
-            item.setText(2, str(character["id"]))
-            self.tree.insertTopLevelItem(0, item)
+            self.addRootCharacter(character)
 
         for root in rootFolders:
             item = QTreeWidgetItem(self.tree)
@@ -693,17 +831,103 @@ class CharactersTree(QDockWidget):
     def loadCharacters(self, id, parent):
         """Check if folder has characters."""
         characters = self.db.getCharactersByFolderId(id)
-        if not bool(characters):
+        if not characters:
             return
         else:
             for character in characters:
                 item = QTreeWidgetItem(parent)
                 item.setText(0, character["name"])
                 if character["image"] is not None:
-                    path = self.dirMan.getImagePath(character["image"], character["id"], character["name"])
+                    path = self.dirMan.getImagePath(character["image"],
+                                                    character["id"],
+                                                    character["name"])
                     item.setIcon(0, QIcon(str(path)))
                 else:
                     item.setIcon(0, self.characterIcon)
                 item.setText(1, character["type"])
                 item.setText(2, str(character["id"]))
                 parent.addChild(item)
+
+    def addRootCharacter(self, character, select=True):
+        """Add root character."""
+        item = QTreeWidgetItem(self.tree)
+        item.setText(0, character["name"])
+        if character["image"] is not None:
+            path = self.dirMan.getImagePath(character["image"],
+                                            character["id"],
+                                            character["name"])
+            item.setIcon(0, QIcon(str(path)))
+        else:
+            item.setIcon(0, self.characterIcon)
+        item.setText(1, "Character")
+        item.setText(2, str(character["id"]))
+        self.tree.insertTopLevelItem(0, item)
+        if select:
+            self.tree.setCurrentItem(item)
+
+    def addChildCharacter(self, character, select=True):
+        """Add child character."""
+        parentFolder = None
+        folders = self.tree.findItems(str(character["folder"]),
+                                      Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
+        for folder in folders:
+            if folder.data(1, 0) == "Folder":
+                parentFolder = folder
+
+        item = QTreeWidgetItem(parentFolder)
+        item.setText(0, character["name"])
+        if character["image"] is not None:
+            path = self.dirMan.getImagePath(character["image"],
+                                            character["id"],
+                                            character["name"])
+            item.setIcon(0, QIcon(str(path)))
+        else:
+            item.setIcon(0, self.characterIcon)
+        item.setText(1, "Character")
+        item.setText(2, str(character["id"]))
+        parentFolder.addChild(item)
+        if select:
+            self.tree.setCurrentItem(item)
+
+    def addRootFolder(self, folder):
+        """Add root folder."""
+        item = QTreeWidgetItem(self.tree)
+        item.setText(0, folder["name"])
+        item.setIcon(0, self.folderIcon)
+        item.setText(1, "Folder")
+        item.setText(2, str(folder["id"]))
+        self.tree.insertTopLevelItem(0, item)
+
+    def addChildFolder(self, folder):
+        """Add child folder."""
+        parentFolder = None
+        folders = self.tree.findItems(str(folder["parentId"]),
+                                      Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
+        for f in folders:
+            if f.data(1, 0) == "Folder":
+                parentFolder = f
+
+        item = QTreeWidgetItem(parentFolder)
+        item.setText(0, folder["name"])
+        item.setIcon(0, self.folderIcon)
+        item.setText(1, "Folder")
+        item.setText(2, str(folder["id"]))
+        self.tree.insertTopLevelItem(0, item)
+
+    def removeCharacterFromList(self, characterId):
+        """Remove a character fom the list."""
+        characters = self.tree.findItems(str(characterId),
+                                         Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
+        for character in characters:
+            if character.data(1, 0) == "Character":
+                # TODO: Figure out a way to delete this instead.
+                character.setHidden(True)
+
+    def removeFolderFromList(self, folderId):
+        """Remove a character fom the list."""
+        folders = self.tree.findItems(str(folderId),
+                                         Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
+        for folder in folders:
+            if folder.data(1, 0) == "Folder":
+                # TODO: Figure out a way to delete this instead.
+                folder.setHidden(True)

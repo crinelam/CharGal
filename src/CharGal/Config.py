@@ -1,5 +1,6 @@
 from platformdirs import PlatformDirs
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from pathlib import Path
 import tempfile
 import json
@@ -66,8 +67,8 @@ class DirectoryManager():
         dir = self.getDataPath()
         file = dir / "data.db"
         file.parent.mkdir(parents=True, exist_ok=True)
-        engine = create_engine("sqlite:///" + str(file), pool_size=20,
-                               max_overflow=0)
+        engine = create_engine("sqlite:///" + str(file), poolclass=NullPool) # , pool_size=20,
+                               # max_overflow=0)
         # print("Connected to database:", engine)
         return engine
 

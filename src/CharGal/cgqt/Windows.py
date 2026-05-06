@@ -1,11 +1,13 @@
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
 from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
-                               QVBoxLayout, QLabel, QWidget, QMessageBox)
+                               QVBoxLayout, QLabel, QWidget, QMessageBox,
+                               QDialog, QDialogButtonBox, QFormLayout,
+                               QLineEdit, QTreeWidget, QTreeWidgetItem)
 from cgqt.Widgets import CharacterInfo, CharactersTree
 from Config import DirectoryManager
 from alchemy.db import DB
-# import json
+import alchemy.db
 
 
 class AboutPopup(QWidget):
@@ -30,6 +32,156 @@ class AboutPopup(QWidget):
         link = QLabel("<a href=\"http://creativecommons.org/licenses/by/3.0/\"_>http://creativecommons.org/licenses/by/3.0/</a>")
         link.setOpenExternalLinks(True)
         layout.addWidget(link, 0, Qt.AlignCenter)
+
+
+class NewCharacterDialog(QDialog):
+    """New character dialog."""
+
+    def __init__(self, parent):
+        """Initialize dialog."""
+        super().__init__(parent)
+
+        self.db = DB()
+
+        self.setWindowTitle("New Character")
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QFormLayout()
+
+        self.nameEdit = QLineEdit()
+        self.layout.addRow(QLabel("Name"), self.nameEdit)
+
+        self.folderSelect = QTreeWidget()
+        self.folderSelect.setHeaderLabels(["Name", "ID"])
+        self.folderSelect.setColumnCount(2)
+        self.folderSelect.setColumnHidden(1, True)
+        self.folderSelect.setSortingEnabled(True)
+
+        self.folderIcon = QIcon("assets/icons/folder.png")
+        self.initFolders()
+
+        self.layout.addRow(QLabel("Folder"), self.folderSelect)
+
+        self.layout.addRow(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def accept(self):
+        """Accept event."""
+        folderItem = self.folderSelect.currentItem()
+        print(folderItem.data(1, 0))
+        if folderItem:
+            character = alchemy.db.Character(name=self.nameEdit.text(),
+                                             folder=folderItem.data(1, 0))
+        else:
+            character = alchemy.db.Character(name=self.nameEdit.text())
+        id = self.db.saveCharacter(character)
+        self.parent().openNewCharacter(id)
+        self.close()
+
+    def initFolders(self):
+        """Initialize folders."""
+        rootFolders = self.db.getRootFolders()
+
+        for root in rootFolders:
+            item = QTreeWidgetItem(self.folderSelect)
+            item.setText(0, root["name"])
+            item.setIcon(0, self.folderIcon)
+            item.setText(1, str(root["id"]))
+            self.folderSelect.insertTopLevelItem(0, item)
+            self.loadChilds(root["id"], item)
+
+    def loadChilds(self, id, parent):
+        """Check if folder has childs and iterate."""
+        childs = self.db.getFoldersByParentId(id)
+        if not bool(childs):
+            return
+        else:
+            for child in childs:
+                item = QTreeWidgetItem(parent)
+                item.setText(0, child["name"])
+                item.setIcon(0, self.folderIcon)
+                item.setText(1, str(child["id"]))
+                parent.addChild(item)
+                self.loadChilds(child["id"], item)
+
+
+class NewFolderDialog(QDialog):
+    """New character dialog."""
+
+    def __init__(self, parent):
+        """Initialize dialog."""
+        super().__init__(parent)
+
+        self.db = DB()
+
+        self.setWindowTitle("New Folder")
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QFormLayout()
+
+        self.nameEdit = QLineEdit("New Folder")
+        self.layout.addRow(QLabel("Name"), self.nameEdit)
+
+        self.folderSelect = QTreeWidget()
+        self.folderSelect.setHeaderLabels(["Name", "ID"])
+        self.folderSelect.setColumnCount(2)
+        self.folderSelect.setColumnHidden(1, True)
+        self.folderSelect.setSortingEnabled(True)
+
+        self.folderIcon = QIcon("assets/icons/folder.png")
+        self.initFolders()
+
+        self.layout.addRow(QLabel("Folder"), self.folderSelect)
+
+        self.layout.addRow(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def accept(self):
+        """Accept event."""
+        folderItem = self.folderSelect.currentItem()
+        if folderItem:
+            folder = alchemy.db.Folder(name=self.nameEdit.text(),
+                                       parentId=folderItem.data(1, 0))
+        else:
+            folder = alchemy.db.Folder(name=self.nameEdit.text())
+        folderId = self.db.saveFolder(folder)
+        newFolder = self.db.getFolderById(folderId)
+        self.parent().addFolderToTree(newFolder)
+        self.close()
+
+    def initFolders(self):
+        """Initialize folders."""
+        rootFolders = self.db.getRootFolders()
+
+        for root in rootFolders:
+            item = QTreeWidgetItem(self.folderSelect)
+            item.setText(0, root["name"])
+            item.setIcon(0, self.folderIcon)
+            item.setText(1, str(root["id"]))
+            self.folderSelect.insertTopLevelItem(0, item)
+            self.loadChilds(root["id"], item)
+
+    def loadChilds(self, id, parent):
+        """Check if folder has childs and iterate."""
+        childs = self.db.getFoldersByParentId(id)
+        if not bool(childs):
+            return
+        else:
+            for child in childs:
+                item = QTreeWidgetItem(parent)
+                item.setText(0, child["name"])
+                item.setIcon(0, self.folderIcon)
+                item.setText(1, str(child["id"]))
+                parent.addChild(item)
+                self.loadChilds(child["id"], item)
 
 
 class MainWindow(QMainWindow):
@@ -145,7 +297,7 @@ class MainWindow(QMainWindow):
 
     def initTree(self):
         """Initialize characters tree."""
-        self.tree = CharactersTree()
+        self.tree = CharactersTree(self)
 
         # TODO: Save Last Area it was docked in
         if "treeDockedArea" in self.config:
@@ -172,8 +324,29 @@ class MainWindow(QMainWindow):
 
     def newChar(self):
         """Open dialog to create a new character."""
-        # TODO: New Character dialog and creation.
-        print("newChar not implemented yet :C")
+        dialog = NewCharacterDialog(self)
+        dialog.exec()
+
+    def openNewCharacter(self, id):
+        """Open newly created character."""
+        character = self.db.getCharacterById(id)
+        if character["folder"] is None:
+            self.tree.addRootCharacter(character)
+        else:
+            self.tree.addChildCharacter(character)
+        self.openCharacter(self.tree.tree.indexFromItem(self.tree.tree.selectedItems()[0]))
+
+    def updateCharacterFolder(self, characterId, folderId):
+        """Update character folder."""
+        self.tabs.currentWidget().info["folder"] = folderId
+        character = self.db.getCharacterById(characterId)
+
+        self.tree.removeCharacterFromList(characterId)
+
+        if character["folder"] is None:
+            self.tree.addRootCharacter(character, False)
+        else:
+            self.tree.addChildCharacter(character, False)
 
     def openCharacter(self, index):
         """Open clicked character."""
@@ -194,8 +367,15 @@ class MainWindow(QMainWindow):
 
     def newFolder(self):
         """Open dialog to create a new folder."""
-        # TODO: New Folder dialog and creation.
-        print("newFolder not implemented yet :C")
+        dialog = NewFolderDialog(self)
+        dialog.exec()
+
+    def addFolderToTree(self, folder):
+        """Add folder to tree."""
+        if folder["parentId"] is None:
+            self.tree.addRootFolder(folder)
+        else:
+            self.tree.addChildFolder(folder)
 
     def closeTabHandler(self, index):
         """Handle tab closure."""
