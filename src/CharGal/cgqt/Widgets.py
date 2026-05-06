@@ -1,12 +1,19 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QColor, QPalette, QIcon, QPixmap)
+from PySide6.QtGui import (QColor, QPalette, QIcon, QPixmap, QAction)
 from PySide6.QtWidgets import (QWidget, QDockWidget, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QHBoxLayout,
                                QLabel, QFormLayout, QLineEdit, QPushButton,
                                QTextEdit, QCheckBox, QStackedWidget,
-                               QScrollArea, QSizePolicy, QListWidget)
+                               QScrollArea, QSizePolicy, QMessageBox,
+                               QMenu, QFileDialog)
+
+import alchemy.db
 from alchemy.db import DB
 from Config import DirectoryManager
+
+import subprocess
+import os
+import platform
 
 
 class Color(QWidget):
@@ -45,7 +52,7 @@ class CharacterInfo(QWidget):
 
         self.layout.addWidget(CharacterDescription(self.info["description"]))
 
-        self.layout.addWidget(CharacterGallery(self.info["id"]))
+        self.layout.addWidget(CharacterGallery(self.info["id"], self.info["name"]))
 
 
 class CharacterInfoHeader(QWidget):
@@ -58,23 +65,35 @@ class CharacterInfoHeader(QWidget):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
-        self.layout.addWidget(CharacterImage(info["image"]),
+        self.layout.addWidget(MainCharacterImage(info["image"], info["id"],
+                                                 info["name"]),
                               alignment=Qt.AlignTop)
 
         self.nameEdit = QLineEdit(info["name"])
+        self.nameEdit.textChanged.connect(self.nameEdited)
         self.pronounsEdit = QLineEdit(info["pronouns"])
+        self.pronounsEdit.textChanged.connect(self.pronounsEdited)
         self.orientationEdit = QLineEdit(info["orientation"])
+        self.orientationEdit.textChanged.connect(self.orientationEdited)
 
         self.ageEdit = QLineEdit(info["age"])
+        self.ageEdit.textChanged.connect(self.ageEdited)
         self.birthdayEdit = QLineEdit(info["birthday"])
+        self.birthdayEdit.textChanged.connect(self.birthdayEdited)
         self.eyesEdit = QLineEdit(info["eyes"])
+        self.eyesEdit.textChanged.connect(self.eyesEdited)
 
         self.heightEdit = QLineEdit(info["height"])
+        self.heightEdit.textChanged.connect(self.heightEdited)
         self.weightEdit = QLineEdit(info["weight"])
+        self.weightEdit.textChanged.connect(self.weightEdited)
         self.hairEdit = QLineEdit(info["hair"])
+        self.hairEdit.textChanged.connect(self.hairEdited)
 
         self.jobEdit = QLineEdit(info["job"])
+        self.jobEdit.textChanged.connect(self.jobEdited)
         self.speciesEdit = QLineEdit(info["species"])
+        self.speciesEdit.textChanged.connect(self.speciesEdited)
 
         self.info1 = QWidget()
         self.formLayout1 = QFormLayout()
@@ -99,9 +118,53 @@ class CharacterInfoHeader(QWidget):
         self.layout.addWidget(self.info2)
 
         self.layout.addWidget(CharacterTags(info["id"]))
-        self.layout.addWidget(CharacterFiles(info["id"]))
+        self.layout.addWidget(CharacterFiles(info["id"], info["name"]))
 
         self.setFixedHeight(210)
+
+    def nameEdited(self, text):
+        """Name edited event."""
+        self.parent().info["name"] = text
+
+    def pronounsEdited(self, text):
+        """Pronouns edited event."""
+        self.parent().info["pronouns"] = text
+
+    def orientationEdited(self, text):
+        """Orientation edited event."""
+        self.parent().info["orientation"] = text
+
+    def ageEdited(self, text):
+        """Age edited event."""
+        self.parent().info["age"] = text
+
+    def birthdayEdited(self, text):
+        """Birthday edited event."""
+        self.parent().info["birthday"] = text
+
+    def eyesEdited(self, text):
+        """Eyes edited event."""
+        self.parent().info["eyes"] = text
+
+    def heightEdited(self, text):
+        """Height edited event."""
+        self.parent().info["height"] = text
+
+    def weightEdited(self, text):
+        """Weight edited event."""
+        self.parent().info["weight"] = text
+
+    def hairEdited(self, text):
+        """Hair edited event."""
+        self.parent().info["hair"] = text
+
+    def jobEdited(self, text):
+        """Job edited event."""
+        self.parent().info["job"] = text
+
+    def speciesEdited(self, text):
+        """Species edited event."""
+        self.parent().info["species"] = text
 
 
 class CharacterTags(QWidget):
@@ -127,31 +190,185 @@ class CharacterTags(QWidget):
 class CharacterFiles(QWidget):
     """Character files."""
 
-    def __init__(self, characterId):
+    def __init__(self, characterId, characterName):
         """Initialize widget."""
         super().__init__()
+
+        self.characterId = characterId
+        self.characterName = characterName
+
+        self.icons = {"image": QIcon("assets/icons/blue-document-image.png"),
+                      "word": QIcon("assets/icons/blue-document-word.png"),
+                      "excel": QIcon("assets/icons/blue-document-excel.table.png"),
+                      "audio": QIcon("assets/icons/blue-document-music.png"),
+                      "powerpoint": QIcon("assets/icons/blue-document-powerpoint.png"),
+                      "pdf": QIcon("assets/icons/blue-document-pdf-text.png"),
+                      "video": QIcon("assets/icons/blue-document-film.png"),
+                      "text": QIcon("assets/icons/blue-document-text.png"),
+                      "compress": QIcon("assets/icons/blue-document-zipper.png"),
+                      "other": QIcon("assets/icons/blue-document.png")}
+
+        self.audioExtensions = [".wav", ".mp3", ".ogg", ".flac", "-opus"]
+        self.videoExtensions = [".mkv", ".webm", ".mp4", ".avi", ".mov"]
+        self.imageExtensions = [".png", ".webp", ".jpg"]
+        self.textExtensions = [".txt", ".xml", ".html", ".css", ".md", ".json"]
+
+        self.wordExtensions = [".doc", ".docx", ".odt", ".ott", ".rtf"]
+        self.excelExtensions = [".ods", ".xls", ".xlsx", ".xltx", ".ots",
+                                ".xlsb"]
+        self.powerpointExtensions = [".ppt", ".pptx", ".ppsx", ".odp", ".potx",
+                                     ".otp"]
+        self.compressExtensions = [".zip", ".rar", ".7z", ".gz", ".lz",
+                                   ".br"]
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.bAddFile = QPushButton("Add file.")
-        self.layout.addWidget(self.bAddFile)
+        self.panel = QWidget()
+        self.panelLayout = QHBoxLayout()
+        self.panel.setLayout(self.panelLayout)
 
-        self.filesWidget = QListWidget()
+        self.bAddFile = QPushButton("Add file")
+        self.bAddFile.clicked.connect(self.addFile)
+        self.panelLayout.addWidget(self.bAddFile)
+
+        self.bOpenFile = QPushButton("Open")
+        self.bOpenFile.clicked.connect(self.openFile)
+        self.panelLayout.addWidget(self.bOpenFile)
+        self.bOpenFile.setEnabled(False)
+
+        self.bDeleteFile = QPushButton("Delete")
+        self.bDeleteFile.clicked.connect(self.deleteFile)
+        self.panelLayout.addWidget(self.bDeleteFile)
+        self.bDeleteFile.setEnabled(False)
+
+        self.layout.addWidget(self.panel)
+
+        self.filesWidget = QTreeWidget()
+        self.filesWidget.setHeaderLabels(["Name", "ID"])
+        self.filesWidget.setColumnCount(2)
+        self.filesWidget.setColumnHidden(1, True)
+        self.filesWidget.setSortingEnabled(True)
+
+        self.filesWidget.itemSelectionChanged.connect(self.selectionChanged)
+        self.filesWidget.itemDoubleClicked.connect(self.openFile)
+
         self.layout.addWidget(self.filesWidget)
-        self.setFixedWidth(200)
+        self.setFixedWidth(400)
         self.setFixedHeight(200)
 
-        placeholderData = ["File1.txt", "File2.pdf", "File3"]
-        self.filesWidget.addItems(placeholderData)
+        self.db = DB()
+
+        self.files = []
+        self.refreshFiles()
+
+    def selectionChanged(self):
+        """Check selection changed."""
+        selected = self.filesWidget.selectedItems()
+        if selected:
+            self.bDeleteFile.setEnabled(True)
+            self.bOpenFile.setEnabled(True)
+        else:
+            self.bDeleteFile.setEnabled(False)
+            self.bOpenFile.setEnabled(False)
+
+    def openFile(self):
+        """Open file."""
+        self.dirMan = DirectoryManager()
+        selectedFile = self.filesWidget.selectedItems()[0].data(0, 0)
+        filepath = self.dirMan.getFilePath(selectedFile, self.characterId, self.characterName)
+
+        if platform.system() == 'Darwin':  # macOS
+            subprocess.call(('open', filepath))
+        elif platform.system() == 'Windows':  # Windows
+            os.startfile(filepath)
+        else: # linux
+            subprocess.call(('xdg-open', filepath))
+
+    def deleteFile(self):
+        """Delete file."""
+        selectedItem = self.filesWidget.selectedItems()[0]
+        selectedFile =selectedItem.data(0, 0)
+        dialog = QMessageBox.warning(self, "Delete file?",
+                                     "Are you sure you want to delete the file '" + selectedFile + "'?",
+                                     buttons=QMessageBox.Yes | QMessageBox.No,
+                                     defaultButton=QMessageBox.No)
+        if dialog == QMessageBox.Yes:
+            print("deleting")
+            self.db.deleteCharacterFile(selectedItem.data(1, 0))
+            print(selectedItem.data(1, 0))
+            self.dirMan.deleteFile(selectedFile, self.characterId,
+                                   self.characterName)
+            self.refreshFiles()
+            
+
+    def addFile(self):
+        """Add file."""
+        self.dirMan = DirectoryManager()
+
+        dialog = QFileDialog()
+        # dialog.setNameFilter("Images ( *.png *.jpg)")
+        dialog.setDirectory(self.dirMan.getDocumentsDir())
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        if dialog.exec():
+            fileNames = dialog.selectedFiles()
+            newFilePath = self.dirMan.copyFile(fileNames[0], self.characterId,
+                                               self.characterName)
+            if newFilePath != "error":
+                fileName = self.dirMan.getFilenameFromPath(newFilePath)
+                file = alchemy.db.CharacterDocument(character=self.characterId,
+                                                    document=fileName)
+                self.db.saveCharacterFile(file)
+                self.refreshFiles()
+
+    def refreshFiles(self):
+        """Refresh files."""
+        while self.filesWidget.takeTopLevelItem(0) is not None:
+            pass
+
+        self.dirMan = DirectoryManager()
+        self.files = self.db.getCharacterFiles(self.characterId)
+
+        for file in self.files:
+            fileExtension = self.dirMan.getExtensionFromFilename(file["fileName"])
+            item = QTreeWidgetItem(self.filesWidget)
+            item.setText(0, file["fileName"])
+            if fileExtension == ".pdf":
+                item.setIcon(0, self.icons["pdf"])
+            elif fileExtension in self.audioExtensions:
+                item.setIcon(0, self.icons["audio"])
+            elif fileExtension in self.videoExtensions:
+                item.setIcon(0, self.icons["video"])
+            elif fileExtension in self.imageExtensions:
+                item.setIcon(0, self.icons["image"])
+            elif fileExtension in self.textExtensions:
+                item.setIcon(0, self.icons["text"])
+            elif fileExtension in self.wordExtensions:
+                item.setIcon(0, self.icons["word"])
+            elif fileExtension in self.excelExtensions:
+                item.setIcon(0, self.icons["excel"])
+            elif fileExtension in self.powerpointExtensions:
+                item.setIcon(0, self.icons["powerpoint"])
+            elif fileExtension in self.compressExtensions:
+                item.setIcon(0, self.icons["compress"])
+            else:
+                item.setIcon(0, self.icons["other"])
+            item.setText(1, str(file["id"]))
+            self.filesWidget.insertTopLevelItem(0, item)
 
 
 class CharacterImage(QLabel):
     """Character image."""
 
-    def __init__(self, imageName):
+    def __init__(self, imageInfo, characterId, characterName):
         """Initialize widget."""
         super().__init__()
+
+        self.imageInfo = imageInfo
+        self.imageName = self.imageInfo["image"]
+
+        self.characterId = characterId
+        self.characterName = characterName
 
         self.setStyleSheet("border: 1px solid gray;")
         self.setFixedWidth(200)
@@ -162,14 +379,119 @@ class CharacterImage(QLabel):
 
         self.dirMan = DirectoryManager()
 
-        if imageName is not None:
-            imagePath = self.dirMan.getImagePath(imageName)
+        if self.imageName is not None:
+            imagePath = self.dirMan.getImagePath(self.imageName, self.characterId, self.characterName)
             self.image = QPixmap(str(imagePath)).scaled(
                 200, 200, Qt.AspectRatioMode.KeepAspectRatio)
         else:
             self.image = self.defaultImage
 
         self.setPixmap(self.image)
+
+        self.db = DB()
+
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+    def contextMenuEvent(self, event):
+        """Context menu event."""
+        menu = QMenu(self)
+
+        aEdit = QAction("Delete image", self)
+        aEdit.triggered.connect(self.deleteImage)
+        menu.addAction(aEdit)
+
+        menu.exec(event.globalPos())
+
+        event.accept()
+
+    def deleteImage(self, event):
+        """Delete Image Trigger."""
+        dialog = QMessageBox.warning(self, "Delete file?",
+                                     "Are you sure you want to delete the image '" + self.imageName + "'?",
+                                     buttons=QMessageBox.Yes | QMessageBox.No,
+                                     defaultButton=QMessageBox.No)
+        if dialog == QMessageBox.Yes:
+            self.db.deleteCharacterImage(self.imageInfo["id"])
+            self.dirMan.deleteImage(self.imageName, self.characterId, self.characterName)
+            self.destroy()
+            self.parent().parent().parent().parent().refreshImageGallery(self.imageInfo["characterId"])
+
+
+class MainCharacterImage(QLabel):
+    """Character image."""
+
+    def __init__(self, imageName, characterId, characterName):
+        """Initialize widget."""
+        super().__init__()
+
+        self.imageName = imageName
+        self.characterId = characterId
+        self.characterName = characterName
+
+        self.setStyleSheet("border: 1px solid gray;")
+        self.setFixedWidth(200)
+        self.setFixedHeight(200)
+
+        self.defaultImage = QPixmap("assets/images/blankCharacter.png").scaled(
+            200, 200, Qt.AspectRatioMode.KeepAspectRatio)
+
+        self.dirMan = DirectoryManager()
+
+        if self.imageName is not None:
+            imagePath = self.dirMan.getImagePath(self.imageName,
+                                                 self.characterId,
+                                                 self.characterName)
+            self.image = QPixmap(str(imagePath)).scaled(
+                200, 200, Qt.AspectRatioMode.KeepAspectRatio)
+        else:
+            self.image = self.defaultImage
+
+        self.setPixmap(self.image)
+
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+        self.db = DB()
+
+    def contextMenuEvent(self, event):
+        """Context menu event."""
+        menu = QMenu(self)
+
+        aEdit = QAction("Change image", self)
+        aEdit.triggered.connect(self.editImage)
+        menu.addAction(aEdit)
+
+        menu.exec(event.globalPos())
+
+        event.accept()
+
+    def editImage(self):
+        """Edit image."""
+        currentImage = self.imageName
+        self.dirMan = DirectoryManager()
+
+        dialog = QFileDialog()
+        dialog.setNameFilter("Images ( *.png *.jpg)")
+        dialog.setDirectory(self.dirMan.getDocumentsDir())
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        if dialog.exec():
+            fileNames = dialog.selectedFiles()
+            newImagePath = self.dirMan.copyImage(fileNames[0], self.characterId, self.characterName)
+            if newImagePath != "error":
+                self.image = QPixmap(str(newImagePath)).scaled(
+                200, 200, Qt.AspectRatioMode.KeepAspectRatio)
+                self.setPixmap(self.image)
+
+                newImageName = os.path.basename(newImagePath)
+                self.parent().parent().info["image"] = newImageName
+
+                if currentImage is not None:
+                    self.dirMan.deleteImage(currentImage, self.characterId, self.characterName)
+
+                self.imageName = newImageName
+
+                self.db.updateCharacterImage(self.parent().parent().info["id"],
+                                           newImageName)
+                self.parent().parent().parent().parent().parent().refreshCharacterImage(self.parent().parent().info["id"])
 
 
 class CharacterDescription(QWidget):
@@ -195,6 +517,7 @@ class CharacterDescription(QWidget):
 
         self.markdownEditor = QTextEdit()
         self.markdownEditor.setText(self.text)
+        self.markdownEditor.textChanged.connect(self.descriptionEdited)
 
         self.stacked.addWidget(self.markdownViewer)
         self.stacked.addWidget(self.markdownEditor)
@@ -209,34 +532,68 @@ class CharacterDescription(QWidget):
             self.stacked.setCurrentWidget(self.markdownViewer)
         self.markdownViewer.setMarkdown(self.markdownEditor.toPlainText())
 
+    def descriptionEdited(self):
+        """Edit description event."""
+        self.parent().info["description"] = self.markdownEditor.toPlainText()
+
 
 class CharacterGallery(QWidget):
     """Character gallery widget."""
 
-    def __init__(self, characterId):
+    def __init__(self, characterId, characterName):
         """Initialize widget."""
         super().__init__()
+
+        self.characterId = characterId
+        self.characterName = characterName
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.addImage = QPushButton("Add image")
-        self.addImage.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.bAddImage = QPushButton("Add image")
+        self.bAddImage.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.bAddImage.clicked.connect(self.addImage)
 
-        self.layout.addWidget(self.addImage)
+        self.layout.addWidget(self.bAddImage)
 
         self.scrollArea = QScrollArea()
         self.scrollArea.setSizePolicy(QSizePolicy.Expanding,
                                       QSizePolicy.Minimum)
         self.scrollArea.setFixedHeight(230)
-        self.scrollArea.setWidget(ImageGallery(characterId))
+        self.imageGallery = ImageGallery(self.characterId, self.characterName)
+        self.scrollArea.setWidget(self.imageGallery)
         self.layout.addWidget(self.scrollArea)
+
+        self.db = DB()
+
+    def refreshImageGallery(self, characterId):
+        """Refresh images."""
+        self.imageGallery.destroy()
+        self.imageGallery = ImageGallery(self.characterId, self.characterName)
+        self.scrollArea.setWidget(self.imageGallery)
+
+    def addImage(self):
+        """Add image."""
+        self.dirMan = DirectoryManager()
+        dialog = QFileDialog()
+        dialog.setNameFilter("Images ( *.png *.jpg)")
+        dialog.setDirectory(self.dirMan.getDocumentsDir())
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        if dialog.exec():
+            fileNames = dialog.selectedFiles()
+            imagePath = self.dirMan.copyImage(fileNames[0], self.characterId, self.characterName)
+            if imagePath != "error":
+                imageName = os.path.basename(imagePath)
+                characterImage = alchemy.db.CharacterImage(image=imageName,
+                                                character=int(self.characterId))
+                self.db.saveCharacterImage(characterImage)
+                self.refreshImageGallery(self.characterId)
 
 
 class ImageGallery(QWidget):
     """Images gallery widget."""
 
-    def __init__(self, characterId):
+    def __init__(self, characterId, characterName):
         """Initialize widget."""
         super().__init__()
 
@@ -250,8 +607,9 @@ class ImageGallery(QWidget):
         self.db = DB()
 
         images = self.db.getImagesByCharacterId(characterId)
+
         for image in images:
-            imageWidget = CharacterImage(image)
+            imageWidget = CharacterImage(image, characterId, characterName)
             imageWidget.setContentsMargins(5, 5, 5, 5)
             self.layout.addWidget(imageWidget)
 
@@ -296,8 +654,9 @@ class CharactersTree(QDockWidget):
             item = QTreeWidgetItem(self.tree)
             item.setText(0, character["name"])
             if character["image"] is not None:
-                path = self.dirMan.getImagePath(character["image"])
-                print(path)
+                path = self.dirMan.getImagePath(character["image"],
+                                                character["id"],
+                                                character["name"])
                 item.setIcon(0, QIcon(str(path)))
             else:
                 item.setIcon(0, self.characterIcon)
@@ -341,7 +700,7 @@ class CharactersTree(QDockWidget):
                 item = QTreeWidgetItem(parent)
                 item.setText(0, character["name"])
                 if character["image"] is not None:
-                    path = self.dirMan.getImagePath(character["image"])
+                    path = self.dirMan.getImagePath(character["image"], character["id"], character["name"])
                     item.setIcon(0, QIcon(str(path)))
                 else:
                     item.setIcon(0, self.characterIcon)

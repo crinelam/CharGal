@@ -88,34 +88,30 @@ class DB():
         """Return character by id."""
         session = self.getSession()
 
-        characters = session.query(Character).filter_by(id=searchId)
+        character = session.query(Character).filter_by(id=searchId).first()
         session.close()
         data = []
-
-        for character in characters:
-            data = {"id": character.id, "image": character.image,
-                    "name": character.name,
-                    "description": character.description,
-                    "pronouns": character.pronouns,
-                    "orientation": character.orientation,
-                    "age": character.age, "birthday": character.birthday,
-                    "height": character.height,
-                    "weight": character.weight, "eyes": character.eyes,
-                    "hair": character.hair, "job": character.job,
-                    "species": character.species,
-                    "folder": character.folder}
+        data = {"id": character.id, "image": character.image,
+                "name": character.name,
+                "description": character.description,
+                "pronouns": character.pronouns,
+                "orientation": character.orientation,
+                "age": character.age, "birthday": character.birthday,
+                "height": character.height,
+                "weight": character.weight, "eyes": character.eyes,
+                "hair": character.hair, "job": character.job,
+                "species": character.species,
+                "folder": character.folder}
         return data
 
     def getCharacterNameById(self, searchId):
         """Return character name by id."""
         session = self.getSession()
 
-        characters = session.query(Character).filter_by(id=searchId)
+        character = session.query(Character).filter_by(id=searchId).first()
         session.close()
-        name = ""
 
-        for character in characters:
-            name = character.name
+        name = character.name
         return name
 
     def getImagesByCharacterId(self, searchId):
@@ -127,7 +123,8 @@ class DB():
         data = []
 
         for image in images:
-            data.append(image.image)
+            data.append({"id": image.id, "image": image.image,
+                         "characterId": image.character})
         return data
 
     def saveFolder(self, folder):
@@ -137,11 +134,37 @@ class DB():
         session.commit()
         session.close()
 
-    def saveCharacter(self, character):
+    def updateCharacter(self, characterInfo):
         """Save character to db."""
         session = self.getSession()
-        session.add(character)
-        session.commit()
+        character = session.query(Character).filter_by(
+            id=characterInfo["id"]).first()
+        if character:
+            character.image = characterInfo["image"]
+            character.name = characterInfo["name"]
+            character.description = characterInfo["description"]
+            character.pronouns = characterInfo["pronouns"]
+            character.orientation = characterInfo["orientation"]
+            character.age = characterInfo["age"]
+            character.birthday = characterInfo["birthday"]
+            character.height = characterInfo["height"]
+            character.weight = characterInfo["weight"]
+            character.eyes = characterInfo["eyes"]
+            character.hair = characterInfo["hair"]
+            character.job = characterInfo["job"]
+            character.species = characterInfo["species"]
+            character.folder = characterInfo["folder"]
+            session.commit()
+        session.close()
+
+    def updateCharacterImage(self, characterId, imageName):
+        """Update image of character."""
+        session = self.getSession()
+        character = session.query(Character).filter_by(
+            id=characterId).first()
+        if character:
+            character.image = imageName
+            session.commit()
         session.close()
 
     def saveCharacterImage(self, characterImage):
@@ -149,6 +172,44 @@ class DB():
         session = self.getSession()
         session.add(characterImage)
         session.commit()
+        session.close()
+
+    def deleteCharacterImage(self, imageId):
+        """Delete character image."""
+        session = self.getSession()
+        image = session.query(CharacterImage).filter_by(id=imageId).first()
+        if image:
+            session.delete(image)
+            session.commit()
+        session.close()
+
+    def getCharacterFiles(self, characterId):
+        """Get character files."""
+        session = self.getSession()
+        files = session.query(CharacterDocument).filter_by(character=characterId)
+        session.close()
+
+        data = []
+        for file in files:
+            data.append({"id": file.id,
+                         "characterId": file.character,
+                         "fileName": file.document})
+        return data
+
+    def saveCharacterFile(self, characterFile):
+        """Save character file to db."""
+        session = self.getSession()
+        session.add(characterFile)
+        session.commit()
+        session.close()
+
+    def deleteCharacterFile(self, fileId):
+        """Delete character file."""
+        session = self.getSession()
+        file = session.query(CharacterDocument).filter_by(id=fileId).first()
+        if file:
+            session.delete(file)
+            session.commit()
         session.close()
 
 

@@ -1,10 +1,10 @@
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
 from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
-                               QVBoxLayout, QLabel, QWidget)
+                               QVBoxLayout, QLabel, QWidget, QMessageBox)
 from cgqt.Widgets import CharacterInfo, CharactersTree
 from Config import DirectoryManager
-from alchemy.db import DB, CharacterImage
+from alchemy.db import DB
 # import json
 
 
@@ -27,7 +27,7 @@ class AboutPopup(QWidget):
         layout.addWidget(QLabel(
             "Licensed under a Creative Commons Attribution 3.0 License."),
                          0, Qt.AlignCenter)
-        link = QLabel("<a href=\"http://creativecommons.org/licenses/by/3.0/\">http://creativecommons.org/licenses/by/3.0/</a>")
+        link = QLabel("<a href=\"http://creativecommons.org/licenses/by/3.0/\"_>http://creativecommons.org/licenses/by/3.0/</a>")
         link.setOpenExternalLinks(True)
         layout.addWidget(link, 0, Qt.AlignCenter)
 
@@ -82,9 +82,6 @@ class MainWindow(QMainWindow):
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.closeTabHandler)
 
-        # for id in [1, 2, 6, 7]:
-        #     self.tabs.addTab(CharacterInfo(id),
-        #                      self.db.getCharacterNameById(id))
         self.setCentralWidget(self.tabs)
 
     def initMenu(self):
@@ -109,6 +106,11 @@ class MainWindow(QMainWindow):
         aRedo.triggered.connect(self.undoStack.redo)
         mEdit.addAction(aRedo)
 
+        aSave = QAction("&Save", self)
+        aSave.setShortcut(QKeySequence.Save)
+        aSave.triggered.connect(self.saveCharacter)
+        mEdit.addAction(aSave)
+
         aAbout = QAction("About", self)
         aAbout.triggered.connect(self.showAbout)
         mHelp.addAction(aAbout)
@@ -132,6 +134,12 @@ class MainWindow(QMainWindow):
         aNewFolder.setStatusTip("Create a new folder")
         aNewFolder.triggered.connect(self.newFolder)
         self.toolbar.addAction(aNewFolder)
+
+        aSaveCharacter = QAction(QIcon("assets/icons/disk.png"),
+                                 "Save Character", self)
+        aSaveCharacter.setStatusTip("Save the current character")
+        aSaveCharacter.triggered.connect(self.saveCharacter)
+        self.toolbar.addAction(aSaveCharacter)
 
         self.addToolBar(self.toolbar)
 
@@ -173,24 +181,59 @@ class MainWindow(QMainWindow):
         type = item.data(1, 0)
         if type == "Character":
             id = item.data(2, 0)
-            index = self.tabs.addTab(CharacterInfo(id),
+            icon = item.icon(0)
+            index = self.tabs.addTab(CharacterInfo(id), icon,
                                      self.db.getCharacterNameById(id))
             self.tabs.setCurrentIndex(index)
+
+    def saveCharacter(self):
+        """Save Character."""
+        characterWidget = self.tabs.currentWidget()
+        if characterWidget is not None:
+            self.db.updateCharacter(characterWidget.info)
 
     def newFolder(self):
         """Open dialog to create a new folder."""
         # TODO: New Folder dialog and creation.
         print("newFolder not implemented yet :C")
-        self.db.saveCharacterImage(CharacterImage(character=7, image="test3.png"))
-        self.db.saveCharacterImage(CharacterImage(character=7, image="test.png"))
-        self.db.saveCharacterImage(CharacterImage(character=7, image="test5.png"))
-        self.db.saveCharacterImage(CharacterImage(character=7, image="test4.png"))
-        self.db.saveCharacterImage(CharacterImage(character=7, image="test2.png"))
 
     def closeTabHandler(self, index):
         """Handle tab closure."""
         # TODO: Ask to save changes and allow to cancel the closure.
-        self.tabs.removeTab(index)
+        item = self.tabs.widget(index)
+        dbInfo = self.db.getCharacterById(item.info["id"])
+        if dbInfo != item.info:
+            confirmDialog = QMessageBox.warning(self, "Save changes?",
+                                                "The character is not saved, do you want to save changes?",
+                                                buttons=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                                                defaultButton=QMessageBox.Cancel)
+            if confirmDialog == QMessageBox.Save:
+                self.saveCharacter()
+                self.tabs.removeTab(index)
+            elif confirmDialog == QMessageBox.Discard:
+                self.tabs.removeTab(index)
+        else:
+            self.tabs.removeTab(index)
+
+    def refreshCharacterImage(self, characterId):
+        """Refresh character image."""
+        character = self.db.getCharacterById(characterId)
+        imagePath = self.dirMan.getImagePath(character["image"],
+                                             character["id"],
+                                             character["name"])
+
+        items = self.tree.tree.findItems(str(characterId), Qt.MatchExactly, 2)
+        characterItem = None
+        for item in items:
+            type = item.data(1, 0)
+            if type == "Character":
+                characterItem = item
+                break
+        if characterItem:
+            characterItem.setIcon(0, QIcon(str(imagePath)))
+
+        characterTabIndex = self.tabs.indexOf(self.tabs.currentWidget())
+        self.tabs.setTabIcon(characterTabIndex, QIcon(str(imagePath)))
 
     def changedDocked(self):
         """Trigger when the docked widget position is changed."""
@@ -203,7 +246,29 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """Close event."""
-        # TODO: Detect unsaved character changes.
-        print("Closing")
         self.dirMan.saveConfig(self.config)
-        event.accept()
+        tabCount = self.tabs.count()
+        hasChanges = False
+        if tabCount > 0:
+            for i in range(tabCount):
+                item = self.tabs.widget(i)
+                dbInfo = self.db.getCharacterById(item.info["id"])
+                if dbInfo != item.info:
+                    hasChanges = True
+                    break
+        if hasChanges:
+            confirmDialog = QMessageBox.warning(self, "Save changes?",
+                                                "You have open characters with unsaved changes, do you want to save all changes before closing?",
+                                                buttons=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                                                defaultButton=QMessageBox.Cancel)
+            if confirmDialog == QMessageBox.Save:
+                for i in range(tabCount):
+                    self.tabs.setCurrentIndex(i)
+                    self.saveCharacter()
+                event.accept()
+            elif confirmDialog == QMessageBox.Discard:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()

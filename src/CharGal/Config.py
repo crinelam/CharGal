@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import json
 import os
+import shutil
 
 
 class DirectoryManager():
@@ -18,6 +19,20 @@ class DirectoryManager():
         else:
             self.dirs = PlatformDirs("CharGal", appauthor=False)
 
+    def getFilenameFromPath(self, path):
+        """Get the filename from the path."""
+        return os.path.basename(path)
+
+    def getNameFromFilename(self, filename):
+        """Get the name from the filename."""
+        name, _ = os.path.splitext(filename)
+        return name
+
+    def getExtensionFromFilename(self, filename):
+        """Get the extension from the filename."""
+        _, extension = os.path.splitext(filename)
+        return extension
+
     def getConfigPath(self):
         """Get the config dir from the system."""
         return self.dirs.user_config_path
@@ -26,10 +41,23 @@ class DirectoryManager():
         """Get the data dir from the system."""
         return self.dirs.user_data_path
 
-    def getImagePath(self, name):
+    def getDocumentsDir(self):
+        """Get the images path from the system."""
+        return self.dirs.user_documents_dir
+
+    def getImagePath(self, name, characterId, characterName):
         """Get the image path for a given image name."""
         dir = self.getDataPath()
-        file = dir / "images" / name
+        folder = str(characterId) + " - " + characterName
+        file = dir / "images" / folder / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        return file
+
+    def getFilePath(self, name, characterId, characterName):
+        """Get the file path for a given file name."""
+        dir = self.getDataPath()
+        folder = str(characterId) + " - " + characterName
+        file = dir / "documents" / folder / name
         file.parent.mkdir(parents=True, exist_ok=True)
         return file
 
@@ -38,9 +66,70 @@ class DirectoryManager():
         dir = self.getDataPath()
         file = dir / "data.db"
         file.parent.mkdir(parents=True, exist_ok=True)
-        engine = create_engine("sqlite:///" + str(file), pool_size=20, max_overflow=0)
+        engine = create_engine("sqlite:///" + str(file), pool_size=20,
+                               max_overflow=0)
         # print("Connected to database:", engine)
         return engine
+
+    def copyImage(self, sourcePath, characterId, characterName):
+        """Copy an image."""
+        originalName = self.getFilenameFromPath(sourcePath)
+        destPath = self.getImagePath(originalName, characterId, characterName)
+
+        originalName = self.getNameFromFilename(originalName)
+
+        fileExistCounter = 1
+        while destPath.exists():
+            fileName, fileExtension = os.path.splitext(destPath)
+            destPath = self.getImagePath(originalName + str(fileExistCounter) +
+                                         fileExtension, characterId,
+                                         characterName)
+            fileExistCounter += 1
+        try:
+            shutil.copy2(sourcePath, str(destPath))
+        except FileNotFoundError:
+            print(f"The file {sourcePath} does not exist.")
+            return "error"
+        except PermissionError:
+            print(f"Permission denied while copying {sourcePath}.")
+            return "error"
+
+        return destPath
+
+    def copyFile(self, sourcePath, characterId, characterName):
+        """Copy an image."""
+        originalName = self.getFilenameFromPath(sourcePath)
+        destPath = self.getFilePath(originalName, characterId, characterName)
+
+        originalName = self.getNameFromFilename(originalName)
+
+        fileExistCounter = 1
+        while destPath.exists():
+            fileName, fileExtension = os.path.splitext(destPath)
+            destPath = self.getFilePath(originalName + str(fileExistCounter) +
+                                         fileExtension, characterId,
+                                         characterName)
+            fileExistCounter += 1
+        try:
+            shutil.copy2(sourcePath, str(destPath))
+        except FileNotFoundError:
+            print(f"The file {sourcePath} does not exist.")
+            return "error"
+        except PermissionError:
+            print(f"Permission denied while copying {sourcePath}.")
+            return "error"
+
+        return destPath
+
+    def deleteImage(self, imageName, characterId, characterName):
+        """Delete an image."""
+        imagePath = self.getImagePath(imageName, characterId, characterName)
+        os.remove(imagePath)
+
+    def deleteFile(self, fileName, characterId, characterName):
+        """Delete an image."""
+        filePath = self.getFilePath(fileName, characterId, characterName)
+        os.remove(filePath)
 
     def saveConfig(self, config):
         """Save the configuration file."""
