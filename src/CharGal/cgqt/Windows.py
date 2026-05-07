@@ -1,3 +1,19 @@
+#        CharGal, a Character Gallery.
+#        Copyright (C) 2026 crinelam
+#
+#        This program is free software: you can redistribute it and/or modify
+#        it under the terms of the GNU General Public License as published by
+#        the Free Software Foundation, either version 3 of the License, or
+#        (at your option) any later version.
+#
+#        This program is distributed in the hope that it will be useful,
+#        but WITHOUT ANY WARRANTY; without even the implied warranty of
+#        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#        GNU General Public License for more details.
+#
+#        You should have received a copy of the GNU General Public License
+#        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
 from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
@@ -19,9 +35,10 @@ class AboutPopup(QWidget):
         self.setWindowFlags(Qt.Popup)  # Qt.FramelessWindowHint)
         layout = QVBoxLayout()
         self.setLayout(layout)
-        layout.addWidget(QLabel("Character Gallery"), 0, Qt.AlignCenter)
-        layout.addWidget(QLabel("Created by crinelam"), 0, Qt.AlignCenter)
-        layout.addWidget(QLabel(""))
+        layout.addWidget(QLabel("CharGal Copyright (C) 2026 crinelam"), 0, Qt.AlignCenter)
+        layout.addWidget(QLabel("This program comes with ABSOLUTELY NO WARRANTY; for details visit <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">https://www.gnu.org/licenses/gpl-3.0.html</a>"), 0, Qt.AlignCenter)
+        layout.addWidget(QLabel("This is free software, and you are welcome to redistribute it"), 0, Qt.AlignCenter)
+        layout.addWidget(QLabel("under certain conditions; visit <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">https://www.gnu.org/licenses/gpl-3.0.html</a> for details"), 0, Qt.AlignCenter)
         layout.addWidget(QLabel(""))
         layout.addWidget(QLabel(
             "Icons (C) 2013 Yusuke Kamiyamane. All rights reserved."),
@@ -29,7 +46,7 @@ class AboutPopup(QWidget):
         layout.addWidget(QLabel(
             "Licensed under a Creative Commons Attribution 3.0 License."),
                          0, Qt.AlignCenter)
-        link = QLabel("<a href=\"http://creativecommons.org/licenses/by/3.0/\"_>http://creativecommons.org/licenses/by/3.0/</a>")
+        link = QLabel("<a href=\"http://creativecommons.org/licenses/by/3.0/\">http://creativecommons.org/licenses/by/3.0/</a>")
         link.setOpenExternalLinks(True)
         layout.addWidget(link, 0, Qt.AlignCenter)
 
