@@ -389,6 +389,12 @@ class MainWindow(QMainWindow):
                                        characterWidget.info["name"])
                 self.refreshCharacterName(characterWidget.info["id"])
 
+        dialog = QMessageBox.information(self, "Character Saved",
+                                         "Character " + characterWidget.info["name"] + " was saved.",
+                                         buttons=QMessageBox.Ok,
+                                         defaultButton=QMessageBox.Ok)
+        dialog.exec()
+
     def newFolder(self):
         """Open dialog to create a new folder."""
         dialog = NewFolderDialog(self)
