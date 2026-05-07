@@ -22,7 +22,6 @@ import tempfile
 import json
 import os
 import shutil
-import platfom
 
 
 class DirectoryManager():
