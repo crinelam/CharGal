@@ -586,11 +586,12 @@ class MainCharacterImage(QLabel):
         self.dirMan = DirectoryManager()
 
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg)")
-        dialog.setDirectory(self.dirMan.getDocumentsDir())
+        dialog.setNameFilter("Images ( *.png *.jpg, *.webp)")
+        dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if dialog.exec():
             fileNames = dialog.selectedFiles()
+            self.dirMan.saveLastFileDialogDir(self.dirMan.getFolderFromPath(fileNames[0]))
             newImagePath = self.dirMan.copyImage(fileNames[0], self.characterId, self.characterName)
             if newImagePath != "error":
                 self.image = QPixmap(str(newImagePath)).scaled(
@@ -693,10 +694,11 @@ class CharacterGallery(QWidget):
         self.dirMan = DirectoryManager()
         dialog = QFileDialog()
         dialog.setNameFilter("Images ( *.png *.jpg)")
-        dialog.setDirectory(self.dirMan.getDocumentsDir())
+        dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if dialog.exec():
             fileNames = dialog.selectedFiles()
+            self.dirMan.saveLastFileDialogDir(self.dirMan.getFolderFromPath(fileNames[0]))
             imagePath = self.dirMan.copyImage(fileNames[0], self.characterId, self.characterName)
             if imagePath != "error":
                 imageName = os.path.basename(imagePath)

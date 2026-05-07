@@ -40,6 +40,10 @@ class DirectoryManager():
         else:
             self.dirs = PlatformDirs("CharGal", appauthor=False)
 
+    def getFolderFromPath(self, path):
+        """Get the folder from the path."""
+        return os.path.dirname(path)
+
     def getFilenameFromPath(self, path):
         """Get the filename from the path."""
         return os.path.basename(path)
@@ -53,6 +57,20 @@ class DirectoryManager():
         """Get the extension from the filename."""
         _, extension = os.path.splitext(filename)
         return extension
+
+    def getLastFileDialogDir(self):
+        """Get the last file dialog dir."""
+        config = self.loadConfig()
+        if config["lastFileDialogDir"] is None:
+            config["lastFileDialogDir"] = self.getDocumentsDir()
+        self.saveConfig(config)
+        return config["lastFileDialogDir"]
+
+    def saveLastFileDialogDir(self, dir):
+        """Save the last file dialog dir."""
+        config = self.loadConfig()
+        config["lastFileDialogDir"] = dir
+        self.saveConfig(config)
 
     def getConfigPath(self):
         """Get the config dir from the system."""
@@ -87,9 +105,7 @@ class DirectoryManager():
         dir = self.getDataPath()
         file = dir / "data.db"
         file.parent.mkdir(parents=True, exist_ok=True)
-        engine = create_engine("sqlite:///" + str(file), poolclass=NullPool) # , pool_size=20,
-                               # max_overflow=0)
-        # print("Connected to database:", engine)
+        engine = create_engine("sqlite:///" + str(file), poolclass=NullPool)
         return engine
 
     def copyImage(self, sourcePath, characterId, characterName):
@@ -128,8 +144,8 @@ class DirectoryManager():
         while destPath.exists():
             fileName, fileExtension = os.path.splitext(destPath)
             destPath = self.getFilePath(originalName + str(fileExistCounter) +
-                                         fileExtension, characterId,
-                                         characterName)
+                                        fileExtension, characterId,
+                                        characterName)
             fileExistCounter += 1
         try:
             shutil.copy2(sourcePath, str(destPath))
@@ -147,7 +163,7 @@ class DirectoryManager():
         dir = self.getDataPath()
         oldFolder = str(characterId) + " - " + oldCharacterName
         newFolder = str(characterId) + " - " + newCharacterName
-        
+
         oldPath = dir / "images" / oldFolder
         newPath = dir / "images" / newFolder
         os.rename(str(oldPath), str(newPath))
@@ -155,7 +171,6 @@ class DirectoryManager():
         oldPath = dir / "documents" / oldFolder
         newPath = dir / "documents" / newFolder
         os.rename(str(oldPath), str(newPath))
-        
 
     def deleteImage(self, imageName, characterId, characterName):
         """Delete an image."""
@@ -177,7 +192,6 @@ class DirectoryManager():
         try:
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text(configData)
-            print("written config on " + file.as_uri())
         except (OSError, PermissionError) as e:
             tempDir = Path(tempfile.gettempdir()) / "CharGal"
             tempDir.mkdir(parents=True, exist_ok=True)
@@ -194,5 +208,9 @@ class DirectoryManager():
             file = configDir / "config.json"
             if file.exists():
                 config.update(json.loads(file.read_text()))
+
+        # for update to v0.1.0
+        if "lastFileDialogDir" not in config.keys():
+            config["lastFileDialogDir"] = None
 
         return config

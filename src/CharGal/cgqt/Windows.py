@@ -461,6 +461,7 @@ class MainWindow(QMainWindow):
     def changedDocked(self):
         """Trigger when the docked widget position is changed."""
         location = self.tree.dockLocation()
+        self.config = self.dirMan.loadConfig()
         if location == Qt.LeftDockWidgetArea:
             self.config["treeDockedArea"] = "Left"
         else:
