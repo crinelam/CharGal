@@ -142,6 +142,21 @@ class DirectoryManager():
 
         return destPath
 
+    def moveFolder(self, characterId, oldCharacterName, newCharacterName):
+        """Move folder to reflect new name."""
+        dir = self.getDataPath()
+        oldFolder = str(characterId) + " - " + oldCharacterName
+        newFolder = str(characterId) + " - " + newCharacterName
+        
+        oldPath = dir / "images" / oldFolder
+        newPath = dir / "images" / newFolder
+        os.rename(str(oldPath), str(newPath))
+
+        oldPath = dir / "documents" / oldFolder
+        newPath = dir / "documents" / newFolder
+        os.rename(str(oldPath), str(newPath))
+        
+
     def deleteImage(self, imageName, characterId, characterName):
         """Delete an image."""
         imagePath = self.getImagePath(imageName, characterId, characterName)

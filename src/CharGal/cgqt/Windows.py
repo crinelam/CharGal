@@ -380,7 +380,15 @@ class MainWindow(QMainWindow):
         """Save Character."""
         characterWidget = self.tabs.currentWidget()
         if characterWidget is not None:
+            oldCharacter = self.db.getCharacterById(characterWidget.info["id"])
+            nameChanged = oldCharacter["name"] != characterWidget.info["name"]
             self.db.updateCharacter(characterWidget.info)
+
+            if nameChanged:
+                self.dirMan.moveFolder(oldCharacter["id"],
+                                       oldCharacter["name"],
+                                       characterWidget.info["name"])
+                self.refreshCharacterName(characterWidget.info["id"])
 
     def newFolder(self):
         """Open dialog to create a new folder."""
@@ -431,6 +439,23 @@ class MainWindow(QMainWindow):
 
         characterTabIndex = self.tabs.indexOf(self.tabs.currentWidget())
         self.tabs.setTabIcon(characterTabIndex, QIcon(str(imagePath)))
+
+    def refreshCharacterName(self, characterId):
+        """Refresh character name."""
+        character = self.db.getCharacterById(characterId)
+
+        items = self.tree.tree.findItems(str(characterId), Qt.MatchExactly, 2)
+        characterItem = None
+        for item in items:
+            type = item.data(1, 0)
+            if type == "Character":
+                characterItem = item
+                break
+        if characterItem:
+            characterItem.setText(0, character["name"])
+
+        characterTabIndex = self.tabs.indexOf(self.tabs.currentWidget())
+        self.tabs.setTabText(characterTabIndex, character["name"])
 
     def changedDocked(self):
         """Trigger when the docked widget position is changed."""
