@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "CharacterGallery"
 description = "A Gallery for your Characters."
-version = "0.0.1"
+version = "0.1.0"
 license = "GPL-3.0"
 readme = "README.md"
 requires-python = ">=3.12"
