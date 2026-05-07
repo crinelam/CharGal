@@ -89,7 +89,6 @@ class NewCharacterDialog(QDialog):
     def accept(self):
         """Accept event."""
         folderItem = self.folderSelect.currentItem()
-        print(folderItem.data(1, 0))
         if folderItem:
             character = alchemy.db.Character(name=self.nameEdit.text(),
                                              folder=folderItem.data(1, 0))
