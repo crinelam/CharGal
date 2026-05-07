@@ -426,7 +426,8 @@ class MainWindow(QMainWindow):
                                              character["id"],
                                              character["name"])
 
-        items = self.tree.tree.findItems(str(characterId), Qt.MatchExactly, 2)
+        items = self.tree.tree.findItems(str(characterId),
+                                         Qt.MatchExactly | Qt.MatchRecursive, 2)
         characterItem = None
         for item in items:
             type = item.data(1, 0)
@@ -443,7 +444,8 @@ class MainWindow(QMainWindow):
         """Refresh character name."""
         character = self.db.getCharacterById(characterId)
 
-        items = self.tree.tree.findItems(str(characterId), Qt.MatchExactly, 2)
+        items = self.tree.tree.findItems(str(characterId),
+                                         Qt.MatchExactly | Qt.MatchRecursive, 2)
         characterItem = None
         for item in items:
             type = item.data(1, 0)
