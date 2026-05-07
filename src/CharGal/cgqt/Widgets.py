@@ -153,6 +153,8 @@ class CharacterInfoHeader(QWidget):
         """Initialize widget."""
         super().__init__()
 
+        self.db = DB()
+
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
@@ -212,6 +214,7 @@ class CharacterInfoHeader(QWidget):
         self.panelLayout = QHBoxLayout()
         self.panelLayout.setContentsMargins(0, 0, 0, 0)
         self.bDeleteChar = QPushButton("Delete")
+        self.bDeleteChar.clicked.connect(self.deleteCharacter)
         self.bChangeFolder = QPushButton("Change Folder")
         self.bChangeFolder.clicked.connect(self.changeFolder)
 
@@ -274,11 +277,44 @@ class CharacterInfoHeader(QWidget):
         self.parent().info["species"] = text
 
     def changeFolder(self):
-        """Change folde eventr."""
+        """Change folder event."""
         parentWindow = self.parent().parent().parent().parent()
         dialog = ChangeCharacterFolderDialog(parentWindow,
                                              self.parent().info["id"])
         dialog.exec()
+
+    def deleteCharacter(self):
+        """Delete character event."""
+        self.dirMan = DirectoryManager()
+
+        dialog = QMessageBox.warning(self, "Delete character?",
+                                     "Are you sure you want to delete the character?\nWarning: This will delete all data from the character and can't be undone.",
+                                     buttons=QMessageBox.Yes | QMessageBox.Cancel,
+                                     defaultButton=QMessageBox.Cancel)
+        if dialog == QMessageBox.Yes:
+            characterId = self.parent().info["id"]
+            characterName = self.parent().info["name"]
+            self.parent().parent().parent().parent().tree.removeCharacterFromList(characterId)
+            currentTabWidget = self.parent().parent().parent().parent().tabs.currentWidget()
+            characterTabIndex = self.parent().parent().parent().parent().tabs.indexOf(currentTabWidget)
+            self.parent().parent().parent().parent().tabs.removeTab(characterTabIndex)
+
+            images = self.db.getImagesByCharacterId(characterId)
+            for image in images:
+                self.dirMan.deleteImage(image["image"],
+                                        characterId, characterName)
+                self.db.deleteCharacterImage(image["id"])
+            self.dirMan.deleteImage(self.parent().info["image"],
+                                    characterId, characterName)
+
+            files = self.db.getCharacterFiles(characterId)
+            for file in files:
+                self.dirMan.deleteFile(file["fileName"],
+                                       characterId, characterName)
+                self.db.deleteCharacterFile(file["id"])
+
+            self.dirMan.deleteFolders(characterId, characterName)
+            self.db.deleteCharacter(characterId)
 
 
 class CharacterTags(QWidget):
@@ -698,7 +734,6 @@ class CharacterGallery(QWidget):
         dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
             fileNames = dialog.selectedFiles()
-            print(self.dirMan.getFolderFromPath(fileNames[0]))
             self.dirMan.saveLastFileDialogDir(self.dirMan.getFolderFromPath(fileNames[0]))
             for fileName in fileNames:
                 imagePath = self.dirMan.copyImage(fileName, self.characterId,

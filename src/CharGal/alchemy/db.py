@@ -268,6 +268,15 @@ class DB():
             session.commit()
         session.close()
 
+    def deleteCharacter(self, characterId):
+        """Delete character."""
+        session = self.getSession()
+        character = session.query(Character).filter_by(id=characterId).first()
+        if character:
+            session.delete(character)
+            session.commit()
+        session.close()
+
 
 class Base(DeclarativeBase):
     """Base."""

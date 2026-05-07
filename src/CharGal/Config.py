@@ -172,6 +172,15 @@ class DirectoryManager():
         newPath = dir / "documents" / newFolder
         os.rename(str(oldPath), str(newPath))
 
+    def deleteFolders(self, characterId, characterName):
+        """Delete folders of character."""
+        dir = self.getDataPath()
+        folder = str(characterId) + " - " + characterName
+        path = dir / "documents" / folder
+        os.rmdir(path)
+        path = dir / "images" / folder
+        os.rmdir(path)
+
     def deleteImage(self, imageName, characterId, characterName):
         """Delete an image."""
         imagePath = self.getImagePath(imageName, characterId, characterName)
