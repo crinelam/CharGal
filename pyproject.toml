@@ -13,6 +13,7 @@ dependencies = [
 	     "PySide6>=6.11.0.*",
 	     "platformdirs>=4.9.6",
 	     "sqlalchemy>=2.0.49",
+	     "tendo>=0.3.0",
 	     ]
 
 [tool.hatch.targets.wheel]

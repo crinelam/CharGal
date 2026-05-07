@@ -15,13 +15,13 @@
 #        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
-
-# from PySide6.QtCore import Qt
+from tendo import singleton
 from PySide6.QtWidgets import QApplication
 from cgqt.Windows import MainWindow
 
 
 if __name__ == "__main__":
+    me = singleton.SingleInstance()
     app = QApplication(sys.argv)
 
     window = MainWindow()
