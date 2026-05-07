@@ -211,6 +211,7 @@ class DirectoryManager():
 
         # for update to v0.1.0
         if "lastFileDialogDir" not in config.keys():
-            config["lastFileDialogDir"] = None
+            config["lastFileDialogDir"] = self.getDocumentsDir()
+            self.saveConfig(config)
 
         return config

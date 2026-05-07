@@ -470,7 +470,6 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """Close event."""
-        self.dirMan.saveConfig(self.config)
         tabCount = self.tabs.count()
         hasChanges = False
         if tabCount > 0:
