@@ -22,6 +22,7 @@ import tempfile
 import json
 import os
 import shutil
+import platfom
 
 
 class DirectoryManager():
@@ -29,10 +30,13 @@ class DirectoryManager():
 
     def __init__(self):
         """Initialice."""
-        if os.geteuid() == 0:
-            # Use /usr/local/share instead of /root when running as root
-            self.dirs = PlatformDirs("CharGal", appauthor=False,
-                                     use_site_for_root=True)
+        if platform.system() != "Windows":
+            if os.geteuid() == 0:
+                # Use /usr/local/share instead of /root when running as root
+                self.dirs = PlatformDirs("CharGal", appauthor=False,
+                                         use_site_for_root=True)
+            else:
+                self.dirs = PlatformDirs("CharGal", appauthor=False)
         else:
             self.dirs = PlatformDirs("CharGal", appauthor=False)
 
