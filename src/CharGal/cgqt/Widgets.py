@@ -695,17 +695,20 @@ class CharacterGallery(QWidget):
         dialog = QFileDialog()
         dialog.setNameFilter("Images ( *.png *.jpg)")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
-        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
             fileNames = dialog.selectedFiles()
+            print(self.dirMan.getFolderFromPath(fileNames[0]))
             self.dirMan.saveLastFileDialogDir(self.dirMan.getFolderFromPath(fileNames[0]))
-            imagePath = self.dirMan.copyImage(fileNames[0], self.characterId, self.characterName)
-            if imagePath != "error":
-                imageName = os.path.basename(imagePath)
-                characterImage = alchemy.db.CharacterImage(image=imageName,
-                                                character=int(self.characterId))
-                self.db.saveCharacterImage(characterImage)
-                self.refreshImageGallery(self.characterId)
+            for fileName in fileNames:
+                imagePath = self.dirMan.copyImage(fileName, self.characterId,
+                                                  self.characterName)
+                if imagePath != "error":
+                    imageName = os.path.basename(imagePath)
+                    characterImage = alchemy.db.CharacterImage(image=imageName,
+                                                               character=int(self.characterId))
+                    self.db.saveCharacterImage(characterImage)
+                    self.refreshImageGallery(self.characterId)
 
 
 class ImageGallery(QWidget):
