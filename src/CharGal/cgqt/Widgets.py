@@ -459,17 +459,18 @@ class CharacterFiles(QWidget):
         dialog = QFileDialog()
         # dialog.setNameFilter("Images ( *.png *.jpg)")
         dialog.setDirectory(self.dirMan.getDocumentsDir())
-        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
             fileNames = dialog.selectedFiles()
-            newFilePath = self.dirMan.copyFile(fileNames[0], self.characterId,
-                                               self.characterName)
-            if newFilePath != "error":
-                fileName = self.dirMan.getFilenameFromPath(newFilePath)
-                file = alchemy.db.CharacterDocument(character=self.characterId,
-                                                    document=fileName)
-                self.db.saveCharacterFile(file)
-                self.refreshFiles()
+            for fileNam in fileNames:
+                newFilePath = self.dirMan.copyFile(fileNam, self.characterId,
+                                                   self.characterName)
+                if newFilePath != "error":
+                    fileName = self.dirMan.getFilenameFromPath(newFilePath)
+                    file = alchemy.db.CharacterDocument(character=self.characterId,
+                                                        document=fileName)
+                    self.db.saveCharacterFile(file)
+            self.refreshFiles()
 
     def refreshFiles(self):
         """Refresh files."""
