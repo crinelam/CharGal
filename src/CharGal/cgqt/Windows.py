@@ -259,6 +259,13 @@ class MainWindow(QMainWindow):
         mEdit = self.menu.addMenu("&Edit")
         mHelp = self.menu.addMenu("&Help")
 
+        aNewChar = QAction(QIcon("assets/icons/blue-document--plus.png"),
+                           "&New Character", self)
+        aNewChar.setStatusTip("Create a new character")
+        aNewChar.setShortcut(QKeySequence(Qt.ControlModifier | Qt.Key_N))
+        aNewChar.triggered.connect(self.newChar)
+        mFile.addAction(aNewChar)
+
         aExit = QAction("E&xit", self)
         # aExit.setShortcut("Alt+F4")
         aExit.triggered.connect(self.close)
