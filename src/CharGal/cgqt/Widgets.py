@@ -107,6 +107,87 @@ class ChangeCharacterFolderDialog(QDialog):
                 self.loadChilds(child["id"], item)
 
 
+class MoveFolderDialog(QDialog):
+    """Move folder dialog."""
+
+    def __init__(self, parent, folderId):
+        """Initialize dialog."""
+        super().__init__(parent)
+
+        self.db = DB()
+
+        self.folderId = folderId
+
+        self.setWindowTitle("Move Folder")
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QFormLayout()
+
+        self.folderSelect = QTreeWidget()
+        self.folderSelect.setHeaderLabels(["Name", "ID"])
+        self.folderSelect.setColumnCount(2)
+        self.folderSelect.setColumnHidden(1, True)
+        self.folderSelect.setSortingEnabled(True)
+
+        self.folderIcon = QIcon("assets/icons/folder.png")
+        self.initFolders()
+
+        self.layout.addRow(QLabel("Folder"), self.folderSelect)
+
+        self.layout.addRow(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def accept(self):
+        """Accept event."""
+        folderItem = self.folderSelect.selectedItems()
+        selectedFolder = None
+        if folderItem:
+            selectedFolder = int(folderItem[0].data(1, 0))
+        else:
+            selectedFolder = None
+        if str(selectedFolder) == str(self.folderId):
+            print("aaa")
+            dialog = QMessageBox.critical(self, "Error",
+                                          "You can't move a folder inside itself!",
+                                          buttons=QMessageBox.Ok,
+                                          defaultButton=QMessageBox.Ok)
+            dialog.exec()
+        else:
+            self.db.updateParentFolder(self.folderId, selectedFolder)
+            self.parent().updateMovedFolder(self.folderId)
+        self.close()
+
+    def initFolders(self):
+        """Initialize folders."""
+        rootFolders = self.db.getRootFolders()
+
+        for root in rootFolders:
+            item = QTreeWidgetItem(self.folderSelect)
+            item.setText(0, root["name"])
+            item.setIcon(0, self.folderIcon)
+            item.setText(1, str(root["id"]))
+            self.folderSelect.insertTopLevelItem(0, item)
+            self.loadChilds(root["id"], item)
+
+    def loadChilds(self, id, parent):
+        """Check if folder has childs and iterate."""
+        childs = self.db.getFoldersByParentId(id)
+        if not bool(childs):
+            return
+        else:
+            for child in childs:
+                item = QTreeWidgetItem(parent)
+                item.setText(0, child["name"])
+                item.setIcon(0, self.folderIcon)
+                item.setText(1, str(child["id"]))
+                parent.addChild(item)
+                self.loadChilds(child["id"], item)
+
+
 class Color(QWidget):
     """Simple color widget for placeholder purposes."""
 
@@ -850,10 +931,24 @@ class CharactersTree(QDockWidget):
         itemType = self.lastContextMenuItem.data(1, 0)
         if itemType == "Folder":
             menu = QMenu(self)
+
             aDeleteFolder = QAction("Delete Folder", self)
             aDeleteFolder.triggered.connect(self.deleteFolder)
             menu.addAction(aDeleteFolder)
+
+            aMoveFolder = QAction("Move Folder", self)
+            aMoveFolder.triggered.connect(self.moveFolder)
+            menu.addAction(aMoveFolder)
+
             menu.exec(self.tree.mapToGlobal(pos))
+
+    def moveFolder(self):
+        """Move folder."""
+        parentWindow = self.parent()
+        folderId = self.lastContextMenuItem.data(2, 0)
+        dialog = MoveFolderDialog(parentWindow,
+                                  folderId)
+        dialog.exec()
 
     def deleteFolder(self):
         """Delete folder."""
@@ -1017,13 +1112,21 @@ class CharactersTree(QDockWidget):
         for character in characters:
             if character.data(1, 0) == "Character":
                 # TODO: Figure out a way to delete this instead.
-                character.setHidden(True)
+                parentItem = character.parent()
+                if parentItem:
+                    parentItem.takeChild(parentItem.indexOfChild(character))
+                else:
+                    self.tree.takeTopLevelItem(self.tree.indexOfTopLevelItem(character))
 
     def removeFolderFromList(self, folderId):
-        """Remove a character fom the list."""
+        """Remove a folder fom the list."""
         folders = self.tree.findItems(str(folderId),
                                          Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
         for folder in folders:
             if folder.data(1, 0) == "Folder":
                 # TODO: Figure out a way to delete this instead.
-                folder.setHidden(True)
+                parentItem = folder.parent()
+                if parentItem:
+                    parentItem.takeChild(parentItem.indexOfChild(folder))
+                else:
+                    self.tree.takeTopLevelItem(self.tree.indexOfTopLevelItem(folder))

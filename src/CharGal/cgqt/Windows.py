@@ -417,9 +417,35 @@ class MainWindow(QMainWindow):
         else:
             self.tree.addChildFolder(folder)
 
+    def updateMovedFolder(self, folderId):
+        """Update moved folders."""
+        folder = self.db.getFolderById(folderId)
+        self.tree.removeFolderFromList(folderId)
+
+        folders = self.db.getFoldersByParentId(folderId)
+        characters = self.db.getCharactersByFolderId(folderId)
+
+        if folders:
+            for f in folders:
+                self.tree.removeFolderFromList(f["id"])
+        if characters:
+            for character in characters:
+                self.tree.removeCharacterFromList(character["id"])
+
+        self.addFolderToTree(folder)
+        if folders:
+            for f in folders:
+                self.addFolderToTree(f)
+                children = self.db.getCharactersByFolderId(f["id"])
+                if children:
+                    for child in children:
+                        self.tree.addChildCharacter(child, False)
+        if characters:
+            for character in characters:
+                self.tree.addChildCharacter(character, False)
+
     def closeTabHandler(self, index):
         """Handle tab closure."""
-        # TODO: Ask to save changes and allow to cancel the closure.
         item = self.tabs.widget(index)
         dbInfo = self.db.getCharacterById(item.info["id"])
         if dbInfo != item.info:

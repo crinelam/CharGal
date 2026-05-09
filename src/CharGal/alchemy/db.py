@@ -97,7 +97,8 @@ class DB():
 
         for character in characters:
             data.append({"type": "Character", "name": character.name,
-                         "id": character.id, "image": character.image})
+                         "id": character.id, "image": character.image,
+                         "folder": character.folder})
         return data
 
     def getCharacterById(self, searchId):
@@ -170,6 +171,16 @@ class DB():
         id = folder.id
         session.close()
         return id
+
+    def updateParentFolder(self, folderId, parentId):
+        """Update folder of character."""
+        session = self.getSession()
+        folder = session.query(Folder).filter_by(
+            id=folderId).first()
+        if folder:
+            folder.parentId = parentId
+            session.commit()
+        session.close()
 
     def saveCharacter(self, character):
         """Save character to db."""
