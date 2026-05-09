@@ -730,7 +730,7 @@ class CharacterGallery(QWidget):
         """Add image."""
         self.dirMan = DirectoryManager()
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg)")
+        dialog.setNameFilter("Images ( *.png *.jpg, *.webp)")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
