@@ -444,6 +444,16 @@ class MainWindow(QMainWindow):
             for character in characters:
                 self.tree.addChildCharacter(character, False)
 
+    def updateFolderName(self, folderId):
+        """Update folder name."""
+        folder = self.db.getFolderById(folderId)
+        items = self.tree.tree.findItems(str(folderId),
+                                         Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
+        if items:
+            for item in items:
+                if item.data(1, 0) == "Folder":
+                    item.setText(0, folder["name"])
+
     def closeTabHandler(self, index):
         """Handle tab closure."""
         item = self.tabs.widget(index)

@@ -192,6 +192,48 @@ class MoveFolderDialog(QDialog):
                 self.loadChilds(child["id"], item, folderId)
 
 
+class RenameFolderDialog(QDialog):
+    """Rename folder dialog."""
+
+    def __init__(self, parent, folderId, oldName):
+        """Initialize dialog."""
+        super().__init__(parent)
+
+        self.db = DB()
+
+        self.folderId = folderId
+
+        self.setWindowTitle("Rename Folder")
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QFormLayout()
+
+        self.nameEdit = QLineEdit()
+        self.nameEdit.setText(oldName)
+        self.layout.addRow(QLabel("Name"), self.nameEdit)
+
+        self.layout.addRow(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def accept(self):
+        """Accept event."""
+        newName = self.nameEdit.text()
+        if newName != "":
+            self.db.updateFolderName(self.folderId, newName)
+            self.parent().updateFolderName(self.folderId)
+            self.close()
+        else:
+            dialog = QMessageBox.critical(self, "Error",
+                                          "Name can't be empty.",
+                                          buttons=QMessageBox.Ok,
+                                          defaultButton=QMessageBox.Ok)
+            dialog.exec()
+
+
 class Color(QWidget):
     """Simple color widget for placeholder purposes."""
 
@@ -944,7 +986,21 @@ class CharactersTree(QDockWidget):
             aMoveFolder.triggered.connect(self.moveFolder)
             menu.addAction(aMoveFolder)
 
+            aRenameFolder = QAction("Rename Folder", self)
+            aRenameFolder.triggered.connect(self.renameFolder)
+            menu.addAction(aRenameFolder)
+
             menu.exec(self.tree.mapToGlobal(pos))
+
+    def renameFolder(self):
+        """Rename folder."""
+        parentWindow = self.parent()
+        folderId = self.lastContextMenuItem.data(2, 0)
+        folder = self.db.getFolderById(folderId)
+        dialog = RenameFolderDialog(parentWindow,
+                                    folderId,
+                                    folder["name"])
+        dialog.exec()
 
     def moveFolder(self):
         """Move folder."""

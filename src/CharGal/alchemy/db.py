@@ -182,6 +182,16 @@ class DB():
             session.commit()
         session.close()
 
+    def updateFolderName(self, folderId, folderName):
+        """Update folder name."""
+        session = self.getSession()
+        folder = session.query(Folder).filter_by(
+            id=folderId).first()
+        if folder:
+            folder.name = folderName
+            session.commit()
+        session.close()
+
     def saveCharacter(self, character):
         """Save character to db."""
         session = self.getSession()
