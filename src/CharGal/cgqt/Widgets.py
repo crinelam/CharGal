@@ -623,7 +623,7 @@ class MainCharacterImage(QLabel):
         self.dirMan = DirectoryManager()
 
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg, *.webp)")
+        dialog.setNameFilter("Images ( *.png *.jpg *.webp )")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if dialog.exec():
@@ -730,7 +730,7 @@ class CharacterGallery(QWidget):
         """Add image."""
         self.dirMan = DirectoryManager()
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg, *.webp)")
+        dialog.setNameFilter("Images ( *.png *.jpg *.webp )")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
