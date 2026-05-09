@@ -134,7 +134,7 @@ class MoveFolderDialog(QDialog):
         self.folderSelect.setSortingEnabled(True)
 
         self.folderIcon = QIcon("assets/icons/folder.png")
-        self.initFolders()
+        self.initFolders(self.folderId)
 
         self.layout.addRow(QLabel("Folder"), self.folderSelect)
 
@@ -161,7 +161,7 @@ class MoveFolderDialog(QDialog):
             self.parent().updateMovedFolder(self.folderId)
         self.close()
 
-    def initFolders(self):
+    def initFolders(self, folderId):
         """Initialize folders."""
         rootFolders = self.db.getRootFolders()
 
@@ -171,9 +171,11 @@ class MoveFolderDialog(QDialog):
             item.setIcon(0, self.folderIcon)
             item.setText(1, str(root["id"]))
             self.folderSelect.insertTopLevelItem(0, item)
-            self.loadChilds(root["id"], item)
+            if str(root["id"]) == str(folderId):
+                item.setDisabled(True)
+            self.loadChilds(root["id"], item, folderId)
 
-    def loadChilds(self, id, parent):
+    def loadChilds(self, id, parent, folderId):
         """Check if folder has childs and iterate."""
         childs = self.db.getFoldersByParentId(id)
         if not bool(childs):
@@ -185,7 +187,9 @@ class MoveFolderDialog(QDialog):
                 item.setIcon(0, self.folderIcon)
                 item.setText(1, str(child["id"]))
                 parent.addChild(item)
-                self.loadChilds(child["id"], item)
+                if str(child["id"]) == str(folderId):
+                    item.setDisabled(True)
+                self.loadChilds(child["id"], item, folderId)
 
 
 class Color(QWidget):
@@ -1111,7 +1115,6 @@ class CharactersTree(QDockWidget):
                                          Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
         for character in characters:
             if character.data(1, 0) == "Character":
-                # TODO: Figure out a way to delete this instead.
                 parentItem = character.parent()
                 if parentItem:
                     parentItem.takeChild(parentItem.indexOfChild(character))
@@ -1124,7 +1127,6 @@ class CharactersTree(QDockWidget):
                                          Qt.MatchFlag.MatchExactly | Qt.MatchRecursive, 2)
         for folder in folders:
             if folder.data(1, 0) == "Folder":
-                # TODO: Figure out a way to delete this instead.
                 parentItem = folder.parent()
                 if parentItem:
                     parentItem.takeChild(parentItem.indexOfChild(folder))
