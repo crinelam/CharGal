@@ -15,7 +15,8 @@
 #        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import Qt, QSize, QRect
-from PySide6.QtGui import QAction, QUndoStack, QKeySequence, QIcon
+from PySide6.QtGui import (QAction, QUndoStack, QKeySequence, QIcon,
+                           QImageReader)
 from PySide6.QtWidgets import (QMainWindow, QTabWidget, QToolBar,
                                QVBoxLayout, QLabel, QWidget, QMessageBox,
                                QDialog, QDialogButtonBox, QFormLayout,
@@ -61,6 +62,8 @@ class NewCharacterDialog(QDialog):
         self.db = DB()
 
         self.setWindowTitle("New Character")
+
+        QImageReader.setAllocationLimit(0)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.buttonBox = QDialogButtonBox(QBtn)
@@ -396,11 +399,11 @@ class MainWindow(QMainWindow):
                                        characterWidget.info["name"])
                 self.refreshCharacterName(characterWidget.info["id"])
 
-        dialog = QMessageBox.information(self, "Character Saved",
-                                         "Character " + characterWidget.info["name"] + " was saved.",
-                                         buttons=QMessageBox.Ok,
-                                         defaultButton=QMessageBox.Ok)
-        dialog.exec()
+            infoDialog = QMessageBox.information(self, "Character Saved",
+                                                 "Character " + characterWidget.info["name"] + " was saved.",
+                                                 buttons=QMessageBox.Ok,
+                                                 defaultButton=QMessageBox.Ok)
+            infoDialog.exec()
 
     def newFolder(self):
         """Open dialog to create a new folder."""

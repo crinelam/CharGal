@@ -15,7 +15,8 @@
 #        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QColor, QPalette, QIcon, QPixmap, QAction)
+from PySide6.QtGui import (QColor, QPalette, QIcon, QPixmap, QAction,
+                           QImageReader)
 from PySide6.QtWidgets import (QWidget, QDockWidget, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QHBoxLayout,
                                QLabel, QFormLayout, QLineEdit, QPushButton,
@@ -518,6 +519,8 @@ class CharacterImage(QLabel):
         self.imageInfo = imageInfo
         self.imageName = self.imageInfo["image"]
 
+        QImageReader.setAllocationLimit(0)
+
         self.characterId = characterId
         self.characterName = characterName
 
@@ -557,6 +560,23 @@ class CharacterImage(QLabel):
 
         event.accept()
 
+    def mouseDoubleClickEvent(self, event):
+        """Mouse double click event."""
+        self.openImage()
+
+    def openImage(self):
+        """Open image."""
+        self.dirMan = DirectoryManager()
+        imagepath = self.dirMan.getImagePath(self.imageName, self.characterId,
+                                             self.characterName)
+
+        if platform.system() == 'Darwin':  # macOS
+            subprocess.call(('open', imagepath))
+        elif platform.system() == 'Windows':  # Windows
+            os.startfile(imagepath)
+        else:  # linux
+            subprocess.call(('xdg-open', imagepath))
+
     def deleteImage(self, event):
         """Delete Image Trigger."""
         dialog = QMessageBox.warning(self, "Delete file?",
@@ -580,6 +600,8 @@ class MainCharacterImage(QLabel):
         self.imageName = imageName
         self.characterId = characterId
         self.characterName = characterName
+
+        QImageReader.setAllocationLimit(0)
 
         self.setFrameStyle(QFrame.StyledPanel)
         self.setFixedWidth(200)
@@ -605,6 +627,23 @@ class MainCharacterImage(QLabel):
 
         self.db = DB()
 
+    def mouseDoubleClickEvent(self, event):
+        """Mouse double click event."""
+        self.openImage()
+
+    def openImage(self):
+        """Open image."""
+        self.dirMan = DirectoryManager()
+        imagepath = self.dirMan.getImagePath(self.imageName, self.characterId,
+                                             self.characterName)
+
+        if platform.system() == 'Darwin':  # macOS
+            subprocess.call(('open', imagepath))
+        elif platform.system() == 'Windows':  # Windows
+            os.startfile(imagepath)
+        else:  # linux
+            subprocess.call(('xdg-open', imagepath))
+
     def contextMenuEvent(self, event):
         """Context menu event."""
         menu = QMenu(self)
@@ -623,7 +662,7 @@ class MainCharacterImage(QLabel):
         self.dirMan = DirectoryManager()
 
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg *.webp )")
+        dialog.setNameFilter("Images ( *.png *.jpg *.jpeg *.webp *.gif)")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if dialog.exec():
@@ -730,7 +769,7 @@ class CharacterGallery(QWidget):
         """Add image."""
         self.dirMan = DirectoryManager()
         dialog = QFileDialog()
-        dialog.setNameFilter("Images ( *.png *.jpg *.webp )")
+        dialog.setNameFilter("Images ( *.png *.jpg *.jpeg *.webp *.gif )")
         dialog.setDirectory(self.dirMan.getLastFileDialogDir())
         dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         if dialog.exec():
