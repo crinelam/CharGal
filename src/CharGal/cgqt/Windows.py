@@ -36,7 +36,7 @@ class AboutPopup(QWidget):
         self.setWindowFlags(Qt.Popup)  # Qt.FramelessWindowHint)
         layout = QVBoxLayout()
         self.setLayout(layout)
-        layout.addWidget(QLabel("CharGal v0.1.0-alpha Copyright (C) 2026 crinelam"), 0, Qt.AlignCenter)
+        layout.addWidget(QLabel("CharGal v0.3.2-alpha Copyright (C) 2026 crinelam"), 0, Qt.AlignCenter)
         layout.addWidget(QLabel("This program comes with ABSOLUTELY NO WARRANTY; for details visit <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">https://www.gnu.org/licenses/gpl-3.0.html</a>"), 0, Qt.AlignCenter)
         layout.addWidget(QLabel("This is free software, and you are welcome to redistribute it"), 0, Qt.AlignCenter)
         layout.addWidget(QLabel("under certain conditions; visit <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">https://www.gnu.org/licenses/gpl-3.0.html</a> for details"), 0, Qt.AlignCenter)
